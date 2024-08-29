@@ -22,7 +22,7 @@ from models.Chamfer3D.dist_chamfer_3D import chamfer_3DDist
 chamfer_dist = chamfer_3DDist()
 
 
-# wandb.init(project="dpcc", entity="ownvoy")
+wandb.init(project="dpcc", entity="ownvoy")
 
 
 def train(args):
@@ -168,27 +168,27 @@ def train(args):
                 epoch_aux_loss.get_avg(),
             )
         )
-        # wandb.log(
-        #     {
-        #         "epoch": epoch + 1,
-        #         "loss": epoch_loss.get_avg(),
-        #         "avg chamfer loss": epoch_chamfer_loss.get_avg(),
-        #         "avg density loss": epoch_density_loss.get_avg(),
-        #         "avg pts num loss": epoch_pts_num_loss.get_avg(),
-        #         "avg latent xyzs loss": epoch_latent_xyzs_loss.get_avg(),
-        #         "avg feats loss": epoch_feats_loss.get_avg(),
-        #         "avg bpp loss": epoch_bpp_loss.get_avg(),
-        #         "avg aux loss": epoch_aux_loss.get_avg(),
-        #         "time per epoch": interval,
-        #     }
-        # )
+        wandb.log(
+            {
+                "epoch": epoch + 1,
+                "loss": epoch_loss.get_avg(),
+                "avg chamfer loss": epoch_chamfer_loss.get_avg(),
+                "avg density loss": epoch_density_loss.get_avg(),
+                "avg pts num loss": epoch_pts_num_loss.get_avg(),
+                "avg latent xyzs loss": epoch_latent_xyzs_loss.get_avg(),
+                "avg feats loss": epoch_feats_loss.get_avg(),
+                "avg bpp loss": epoch_bpp_loss.get_avg(),
+                "avg aux loss": epoch_aux_loss.get_avg(),
+                "time per epoch": interval,
+            }
+        )
         if best_loss >= epoch_loss.get_avg():
             best_loss = epoch_loss.get_avg()
             model_save_path = os.path.join(
                 "./model_checkpoints", f"model_epoch_{epoch+1}.pth"
             )
             torch.save(model.state_dict(), model_save_path)
-            # wandb.save(model_save_path)
+            wandb.save(model_save_path)
             print(f"Model saved to {model_save_path}")
 
 
@@ -201,7 +201,7 @@ def parse_train_args():
     parser = argparse.ArgumentParser(description="Training Arguments")
 
     parser.add_argument(
-        "--dataset", default="shapenet", type=str, help="shapenet or semantickitti"
+        "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
         "--batch_size",
@@ -218,7 +218,7 @@ def parse_train_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[11, 11, 11],
+        default=[11,11,11],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",
@@ -271,5 +271,7 @@ if __name__ == "__main__":
         model_args = parse_semantickitti_args()
 
     reset_model_args(train_args, model_args)
+    wandb.config.update(vars(model_args))
+    wandb.config.update(vars(train_args))
 
     train(model_args)
