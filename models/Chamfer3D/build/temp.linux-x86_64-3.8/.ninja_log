@@ -1,0 +1,5 @@
+# ninja log v5
+0	7446	1724668806411190171	/workspace/D-PCC/models/Chamfer3D/build/temp.linux-x86_64-3.8/chamfer3D.o	a13767513d84cb41
+0	13575	1724668812535108074	/workspace/D-PCC/models/Chamfer3D/build/temp.linux-x86_64-3.8/chamfer_cuda.o	50ab618a26ff6f91
+0	8440	1724927231711272560	/workspace/DPCC2/models/Chamfer3D/build/temp.linux-x86_64-3.8/chamfer3D.o	3409e0c74f7bdab5
+0	14277	1724927237547327407	/workspace/DPCC2/models/Chamfer3D/build/temp.linux-x86_64-3.8/chamfer_cuda.o	dba307b4c306d9fd

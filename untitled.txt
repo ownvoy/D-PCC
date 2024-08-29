@@ -1,0 +1,10 @@
+# Ignore wandb and output folders
+wandb/
+output/
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
+data/semantickitti/*.pkl
+point_cloud.ply
+data/
+model_checkpoints/
