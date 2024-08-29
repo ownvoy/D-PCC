@@ -138,7 +138,6 @@ class AutoEncoder(nn.Module):
         )
         loss = loss + feats_loss
         loss_items["feats_loss"] = feats_loss.item()
-        loss_items["feats_loss"] = 0.0
 
         # bpp loss
         bpp = feats_bpp + xyzs_bpp

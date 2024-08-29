@@ -93,6 +93,7 @@ def train(args):
 
             feats = input_dict["feats"].cuda().permute(0, 2, 1).contiguous()
             input = torch.cat((input, feats), dim=1)
+            # print(input.shape)
 
             # model forward
             decompressed_xyzs, loss, loss_items, bpp = model(input)

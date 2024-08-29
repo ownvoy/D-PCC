@@ -69,7 +69,7 @@ def load_pcd(path, dataset_name="semantickitti"):
     print(f"scales_shape: {scales.shape}")
     print(f"xyz_shape: {xyz.shape}")
     print(f"op_shape: {opacities.shape}")
-    points = np.hstack((xyz, opacities, scales, rots))
+    points = np.hstack((xyz,nxyz, opacities, scales, rots))
     return points
 
 
