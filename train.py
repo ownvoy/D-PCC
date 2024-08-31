@@ -225,12 +225,12 @@ def parse_train_args():
         help="max upsmaple number, reversely symmetric with downsample_rate",
     )
     parser.add_argument(
-        "--bpp_lambda", default=1e-3, type=float, help="bpp loss coefficient"
+        "--bpp_lambda", default=1e-2, type=float, help="bpp loss coefficient"
     )
     # feats compression
     parser.add_argument(
         "--compress_feats",
-        default=False,
+        default=True,
         type=str2bool,
         help="whether compress featss",
     )

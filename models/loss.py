@@ -96,7 +96,7 @@ def get_feats_loss(gt_feats, pred_feats, pred2gt_idx, args):
 
     feats_loss = mes_loss(pred_feats, nearest_feats)
     # print(feats_loss)
-    feats_loss = feats_loss * args.normal_coe
+    feats_loss = feats_loss * args.feats_coe
     # print(feats_loss)
 
     return feats_loss

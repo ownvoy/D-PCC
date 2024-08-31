@@ -32,12 +32,12 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="./data/semantickittino_delete_min10_cubesize6.pkl",
+        default="./data/semantickittino_delete_min10_cubesize3.pkl",
         type=str,
         help="path to train dataset",
     )
     parser.add_argument(
-        "--train_cube_size", default=6, type=int, help="cube size of train dataset"
+        "--train_cube_size", default=3, type=int, help="cube size of train dataset"
     )
     # parser.add_argument(
     #     "--val_data_path",
@@ -50,12 +50,12 @@ def parse_semantickitti_args():
     # )
     parser.add_argument(
         "--test_data_path",
-        default="./data/semantickittino_delete_min10_cubesize6.pkl",
+        default="./data/semantickittino_delete_min10_cubesize3.pkl",
         type=str,
         help="path to test dataset",
     )
     parser.add_argument(
-        "--test_cube_size", default=6, type=int, help="cube size of test dataset"
+        "--test_cube_size", default=3, type=int, help="cube size of test dataset"
     )
     parser.add_argument(
         "--peak", default=None, type=float, help="peak value for PSNR calculation"
@@ -155,7 +155,7 @@ def parse_semantickitti_args():
         "--pts_num_coe", default=5e-7, type=float, help="pts num loss coefficient"
     )
     parser.add_argument(
-        "--normal_coe", default=1e-2, type=float, help="normal loss coefficient"
+        "--feats_coe", default=1e-2, type=float, help="normal loss coefficient"
     )
     parser.add_argument(
         "--bpp_lambda", default=5e-4, type=float, help="bpp loss coefficient"

@@ -251,7 +251,7 @@ def parse_dataset_args():
         "--data_root", default="./", type=str, help="dir of semantickitti dataset"
     )
     # cube size
-    parser.add_argument("--cube_size", default=6, type=int, help="cube size")
+    parser.add_argument("--cube_size", default=3, type=int, help="cube size")
     # minimum points number in each cube when training
     parser.add_argument(
         "--train_min_num",
@@ -277,7 +277,7 @@ def parse_dataset_args():
 
 if __name__ == "__main__":
     dataset_args = parse_dataset_args()
-    train_path = "../DPCC_data/point_cloud.ply"
+    train_path = "../DPCC_output/pcd_cube3_epoch3/merge/gt/0.ply"
 
     # 2. generate dataset
     generate_dataset(
