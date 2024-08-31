@@ -94,7 +94,7 @@ def divide_cube(
     attribute,
     map_size=100,
     cube_size=10,
-    min_num=100,
+    min_num=10,
     max_num=30000,
     sample_num=None,
 ):
@@ -122,10 +122,11 @@ def divide_cube(
             cubes[tuple_cube_idx] = []
         cubes[tuple_cube_idx].append(idx)
 
-    # remove those cubes whose points_num is small than min_num
+    # # remove those cubes whose points_num is small than min_num
     del_k = -1
     k_del = []
     for k in cubes.keys():
+        print(len(cubes[k]))
         if len(cubes[k]) < min_num:
             label[cubes[k]] = del_k
             del_k -= 1
@@ -134,6 +135,7 @@ def divide_cube(
             label[cubes[k]] = del_k
             del_k -= 1
             k_del.append(k)
+    
     for k in k_del:
         del cubes[k]
 
@@ -234,11 +236,11 @@ def generate_dataset(
 
     with open(
         os.path.join(
-            save_path, dataset_name + "_{}_cube_size_{}.pkl".format(mode, cube_size)
-        ),
-        "wb",
+            save_path, dataset_name + f"no_delete_min10_cubesize{cube_size}.pkl"
+        ), "wb"
     ) as f:
         pkl.dump(data, f, protocol=2)
+
 
 
 def parse_dataset_args():
@@ -249,18 +251,18 @@ def parse_dataset_args():
         "--data_root", default="./", type=str, help="dir of semantickitti dataset"
     )
     # cube size
-    parser.add_argument("--cube_size", default=12, type=int, help="cube size")
+    parser.add_argument("--cube_size", default=6, type=int, help="cube size")
     # minimum points number in each cube when training
     parser.add_argument(
         "--train_min_num",
-        default=1024,
+        default=100,
         type=int,
         help="minimum points number in each cube when training",
     )
     # minimum points number in each cube when testing
     parser.add_argument(
         "--test_min_num",
-        default=100,
+        default=50,
         type=int,
         help="minimum points number in each cube when testing",
     )
@@ -275,7 +277,7 @@ def parse_dataset_args():
 
 if __name__ == "__main__":
     dataset_args = parse_dataset_args()
-    train_path = "point_cloud.ply"
+    train_path = "../DPCC_data/point_cloud.ply"
 
     # 2. generate dataset
     generate_dataset(
@@ -285,5 +287,5 @@ if __name__ == "__main__":
         cube_size=dataset_args.cube_size,
         min_num=dataset_args.train_min_num,
         max_num=dataset_args.max_num,
-        save_path="./output",
+        save_path="./data",
     )

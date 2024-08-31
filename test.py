@@ -336,7 +336,7 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="./model_checkpoints/model_epoch_3.pth", type=str, help="path to ckpt"
+        "--model_path", default="./model_checkpoints/cube6_epoch_50.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"

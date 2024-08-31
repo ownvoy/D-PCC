@@ -180,9 +180,13 @@ class DownsampleLayer(nn.Module):
 
         # (b, sample_num)
         downsample_num = torch.zeros((batch_size, sample_num)).cuda()
+        # print("downsample_num shape:", downsample_num.shape)  # Should output (batch_size, sample_num)
+        # print("Maximum index in uniques should be <", sample_num)
+
         for i in range(batch_size):
             uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
-            downsample_num[i][uniques.long()] = counts.float()
+            if downsample_num.shape[1] > 0 and uniques.numel() > 0:
+                downsample_num[i][uniques.long()] = counts.float()
 
         # (b, m, k)
         knn_idx = pointops.knnquery_heap(self.k, xyzs_trans, sampled_xyzs_trans).long()
@@ -220,13 +224,16 @@ class DownsampleLayer(nn.Module):
             self.k = xyzs.shape[2]
 
         sample_num = round(xyzs.shape[2] * self.downsample_rate)
+        # print(f"sample_num: {sample_num}")
         # (b, n, 3)
         xyzs_trans = xyzs.permute(0, 2, 1).contiguous()
 
         # FPS, (b, sample_num)
         sample_idx = pointops.furthestsampling(xyzs_trans, sample_num).long()
+        # print(f"sample_idx: {sample_idx.shape}")
         # (b, 3, sample_num)
         sampled_xyzs = index_points(xyzs, sample_idx)
+        # print(f"sampled_xyzs: {sampled_xyzs.shape}")
 
         # get density
         downsample_num, mean_distance, mask, knn_idx = self.get_density(sampled_xyzs, xyzs)
@@ -407,7 +414,7 @@ class XyzsUpsampleLayer(nn.Module):
 
 
 class FeatsUpsampleLayer(nn.Module):
-    def __init__(self, args, layer_idx, upsample_rate=None, decompress_normal=False):
+    def __init__(self, args, layer_idx, upsample_rate=None, decompress_feats=False):
         super(FeatsUpsampleLayer, self).__init__()
 
         if upsample_rate == None:
@@ -415,10 +422,10 @@ class FeatsUpsampleLayer(nn.Module):
         else:
             self.upsample_rate = upsample_rate
 
-        # weather decompress normal
-        self.decompress_normal = decompress_normal
-        if self.decompress_normal:
-            self.out_fdim = 3
+        # weather decompress feats
+        self.decompress_feats = decompress_feats
+        if self.decompress_feats:
+            self.out_fdim = 11
         else:
             self.out_fdim = args.dim
 
@@ -429,7 +436,7 @@ class FeatsUpsampleLayer(nn.Module):
         # (b, c, n, u)
         upsampled_feats = self.feats_nn(feats)
 
-        if self.decompress_normal == False:
+        if self.decompress_feats == False:
             # shortcut
             repeated_feats = repeat(feats, 'b c n -> b c n u', u=self.upsample_rate)
             # (b, c, n, u)

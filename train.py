@@ -186,7 +186,7 @@ def train(args):
         if best_loss >= epoch_loss.get_avg():
             best_loss = epoch_loss.get_avg()
             model_save_path = os.path.join(
-                "./model_checkpoints", f"model_epoch_{epoch+1}.pth"
+                "./model_checkpoints", f"cube{args.train_cube_size}_epoch_{epoch+1}.pth"
             )
             torch.save(model.state_dict(), model_save_path)
             wandb.save(model_save_path)

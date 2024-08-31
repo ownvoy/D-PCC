@@ -125,10 +125,10 @@ class RefineLayer(nn.Module):
         self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx, upsample_rate=1)
 
         # decompress normal
-        if args.compress_normal == True and layer_idx == args.layer_num-1:
-            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_normal=True)
+        if args.compress_feats == True and layer_idx == args.layer_num-1:
+            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=True)
         else:
-            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_normal=False)
+            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=False)
 
 
     def forward(self, xyzs, feats):

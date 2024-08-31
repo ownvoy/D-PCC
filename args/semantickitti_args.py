@@ -32,30 +32,30 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="./data/semantickitti/semantickitti_train_cube_size_12.pkl",
+        default="./data/semantickittino_delete_min10_cubesize6.pkl",
         type=str,
         help="path to train dataset",
     )
     parser.add_argument(
-        "--train_cube_size", default=12, type=int, help="cube size of train dataset"
+        "--train_cube_size", default=6, type=int, help="cube size of train dataset"
     )
-    parser.add_argument(
-        "--val_data_path",
-        default="./data/semantickitti/semantickitti_val_cube_size_12.pkl",
-        type=str,
-        help="path to val dataset",
-    )
-    parser.add_argument(
-        "--val_cube_size", default=12, type=int, help="cube size of val dataset"
-    )
+    # parser.add_argument(
+    #     "--val_data_path",
+    #     default="./data/semantickittino_delete_min10_cubesize6.pkl",
+    #     type=str,
+    #     help="path to val dataset",
+    # )
+    # parser.add_argument(
+    #     "--val_cube_size", default=6, type=int, help="cube size of val dataset"
+    # )
     parser.add_argument(
         "--test_data_path",
-        default="./data/semantickitti/semantickitti_test_cube_size_12.pkl",
+        default="./data/semantickittino_delete_min10_cubesize6.pkl",
         type=str,
         help="path to test dataset",
     )
     parser.add_argument(
-        "--test_cube_size", default=12, type=int, help="cube size of test dataset"
+        "--test_cube_size", default=6, type=int, help="cube size of test dataset"
     )
     parser.add_argument(
         "--peak", default=None, type=float, help="peak value for PSNR calculation"
@@ -72,11 +72,17 @@ def parse_semantickitti_args():
     )
     # attribute compression
     parser.add_argument(
-        "--compress_normal",
-        default=False,
+        "--compress_feats",
+        default=True,
         type=str2bool,
         help="whether compress normals",
     )
+    # parser.add_argument(
+    #     "--compress_normal",
+    #     default=False,
+    #     type=str2bool,
+    #     help="whether compress normals",
+    # )
     parser.add_argument(
         "--compress_opacitiy",
         default=False,
@@ -109,7 +115,7 @@ def parse_semantickitti_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[11, 11, 11],
+        default=[11,11,11],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",
