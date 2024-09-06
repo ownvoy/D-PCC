@@ -212,7 +212,7 @@ def parse_train_args():
     )
     parser.add_argument(
         "--downsample_rate",
-        default=[1 / 3, 1 / 3, 1 / 3],
+        default=[1 / 2, 1 / 2, 1 / 2],
         nargs="+",
         type=float,
         help="downsample rate",

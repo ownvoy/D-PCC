@@ -32,12 +32,12 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="./data/semantickittino_delete_min10_cubesize3.pkl",
+        default="./data/cubesize6_without_nxyz.pkl",
         type=str,
         help="path to train dataset",
     )
     parser.add_argument(
-        "--train_cube_size", default=3, type=int, help="cube size of train dataset"
+        "--train_cube_size", default=6, type=int, help="cube size of train dataset"
     )
     # parser.add_argument(
     #     "--val_data_path",
@@ -100,7 +100,7 @@ def parse_semantickitti_args():
     )
     parser.add_argument(
         "--in_fdim",
-        default=14,
+        default=11,
         type=int,
         help="input dimension, may contain attributes",
     )
@@ -108,7 +108,7 @@ def parse_semantickitti_args():
     parser.add_argument("--k", default=16, type=int, help="knearest neighbor")
     parser.add_argument(
         "--downsample_rate",
-        default=[1 / 3, 1 / 3, 1 / 3],
+        default=[1 / 2, 1 / 2, 1 / 2],
         nargs="+",
         type=float,
         help="downsample rate",

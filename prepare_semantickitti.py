@@ -69,7 +69,7 @@ def load_pcd(path, dataset_name="semantickitti"):
     print(f"scales_shape: {scales.shape}")
     print(f"xyz_shape: {xyz.shape}")
     print(f"op_shape: {opacities.shape}")
-    points = np.hstack((xyz,nxyz, opacities, scales, rots))
+    points = np.hstack((xyz, opacities, scales, rots))
     return points
 
 
@@ -95,7 +95,6 @@ def divide_cube(
     map_size=100,
     cube_size=10,
     min_num=10,
-    max_num=30000,
     sample_num=None,
 ):
     """
@@ -125,20 +124,18 @@ def divide_cube(
     # # remove those cubes whose points_num is small than min_num
     del_k = -1
     k_del = []
+    patch_num = 0
     for k in cubes.keys():
+        patch_num += 1
         print(len(cubes[k]))
         if len(cubes[k]) < min_num:
-            label[cubes[k]] = del_k
-            del_k -= 1
-            k_del.append(k)
-        if len(cubes[k]) > max_num:
             label[cubes[k]] = del_k
             del_k -= 1
             k_del.append(k)
     
     for k in k_del:
         del cubes[k]
-
+    print(f"patch_num{patch_num}")
     for tuple_cube_idx, point_idx in cubes.items():
         dim_cube_num = np.ceil(map_size / cube_size).astype(int)
         # indicate which cube a point belongs to
@@ -200,7 +197,6 @@ def generate_dataset(
     cube_size=20,
     sample_num=None,
     min_num=15000,
-    max_num=100000,
     save_path="./data/semantickitti",
 ):
     if not os.path.exists(save_path):
@@ -208,17 +204,16 @@ def generate_dataset(
 
     data = {}
     idx = 0
-    patch_num = 0
+    
     points = load_pcd(path, dataset_name)
     xyzs = points[:, :3]
     feats = points[:, 3:]
-
+    print(f"cubesieze{cube_size}")
     mask, points, meta_data = divide_cube(
         xyzs,
         attribute=feats,
         cube_size=cube_size,
         min_num=min_num,
-        max_num=max_num,
         sample_num=sample_num,
     )
     key = Counter(mask)
@@ -232,11 +227,10 @@ def generate_dataset(
     data[idx]["meta_data"] = meta_data
     # data[index] = points
     idx += 1
-    patch_num += len(points)
 
     with open(
         os.path.join(
-            save_path, dataset_name + f"no_delete_min10_cubesize{cube_size}.pkl"
+            save_path, dataset_name + f"cubesize{cube_size}.pkl"
         ), "wb"
     ) as f:
         pkl.dump(data, f, protocol=2)
@@ -251,24 +245,13 @@ def parse_dataset_args():
         "--data_root", default="./", type=str, help="dir of semantickitti dataset"
     )
     # cube size
-    parser.add_argument("--cube_size", default=3, type=int, help="cube size")
+    parser.add_argument("--cube_size", default=6, type=int, help="cube size")
     # minimum points number in each cube when training
     parser.add_argument(
         "--train_min_num",
-        default=100,
+        default=10,
         type=int,
         help="minimum points number in each cube when training",
-    )
-    # minimum points number in each cube when testing
-    parser.add_argument(
-        "--test_min_num",
-        default=50,
-        type=int,
-        help="minimum points number in each cube when testing",
-    )
-    # maximum points number in each cube
-    parser.add_argument(
-        "--max_num", default=500000, type=int, help="maximum points number in each cube"
     )
 
     args = parser.parse_args()
@@ -277,7 +260,7 @@ def parse_dataset_args():
 
 if __name__ == "__main__":
     dataset_args = parse_dataset_args()
-    train_path = "../DPCC_output/pcd_cube3_epoch3/merge/gt/0.ply"
+    train_path = "../DPCC_data/point_cloud.ply"
 
     # 2. generate dataset
     generate_dataset(
@@ -286,6 +269,5 @@ if __name__ == "__main__":
         "train",
         cube_size=dataset_args.cube_size,
         min_num=dataset_args.train_min_num,
-        max_num=dataset_args.max_num,
         save_path="./data",
     )
