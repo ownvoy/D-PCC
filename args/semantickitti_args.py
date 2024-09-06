@@ -32,22 +32,14 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="./data/cubesize6_without_nxyz.pkl",
+        default="../DPCC_data/data/cubesize6_without_nxyz.pkl",
         type=str,
         help="path to train dataset",
     )
     parser.add_argument(
         "--train_cube_size", default=6, type=int, help="cube size of train dataset"
     )
-    # parser.add_argument(
-    #     "--val_data_path",
-    #     default="./data/semantickittino_delete_min10_cubesize6.pkl",
-    #     type=str,
-    #     help="path to val dataset",
-    # )
-    # parser.add_argument(
-    #     "--val_cube_size", default=6, type=int, help="cube size of val dataset"
-    # )
+
     parser.add_argument(
         "--test_data_path",
         default="./data/semantickittino_delete_min10_cubesize3.pkl",
@@ -77,12 +69,7 @@ def parse_semantickitti_args():
         type=str2bool,
         help="whether compress normals",
     )
-    # parser.add_argument(
-    #     "--compress_normal",
-    #     default=False,
-    #     type=str2bool,
-    #     help="whether compress normals",
-    # )
+
     parser.add_argument(
         "--compress_opacitiy",
         default=False,
@@ -123,7 +110,7 @@ def parse_semantickitti_args():
     parser.add_argument(
         "--layer_num", default=3, type=int, help="downsample/upsmaple stage"
     )
-    parser.add_argument("--dim", default=11, type=int, help="feature dimension")
+    parser.add_argument("--dim", default=2, type=int, help="feature dimension")
     parser.add_argument("--hidden_dim", default=64, type=int, help="hiddem dimension")
     parser.add_argument("--ngroups", default=1, type=int, help="groups for groupnorm")
     parser.add_argument(

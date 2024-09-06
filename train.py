@@ -219,7 +219,7 @@ def parse_train_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[11,11,11],
+        default=[2,2,2],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",
