@@ -103,10 +103,15 @@ class UpsampleNumLayer(nn.Module):
             nn.Conv1d(args.hidden_dim, 1, 1),
             nn.Sigmoid()
         )
+        self.pre_conv2 = nn.Conv1d(args.in_fdim, args.dim, 1)
 
 
     def forward(self, feats):
         # (b, 1, n)
+        print(f"upsamplenumlayer: feats size:{feats.shape}")
+        if feats.shape[1] == 8:
+            feats = self.pre_conv2(feats)
+            
         upsample_num = self.upsample_num_nn(feats)
         # (b, n)
         upsample_num = upsample_num.squeeze(1) * (self.max_upsample_num-1)
@@ -122,13 +127,18 @@ class RefineLayer(nn.Module):
     def __init__(self, args, layer_idx):
         super(RefineLayer, self).__init__()
 
-        self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx, upsample_rate=1)
+        self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx)
+                # self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx, upsample_rate=1)
 
         # decompress normal
+        # if args.compress_feats == True and layer_idx == args.layer_num-1:
+        #     self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=True)
+        # else:
+        #     self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=False)
         if args.compress_feats == True and layer_idx == args.layer_num-1:
-            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=True)
+            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, decompress_feats=True)
         else:
-            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=False)
+            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, decompress_feats=False)
 
 
     def forward(self, xyzs, feats):
@@ -227,11 +237,13 @@ class Decoder(nn.Module):
             if upsample_cnt > 0:
                 # upsample xyzs and feats: (b, c, n u)
                 candidate_xyzs, candidate_feats = upsample_nn(xyzs, feats)
+                print(f"candidate_feats:{candidate_feats.shape}")
     
                 # predict upsample_num: (b, n)
                 upsample_num = upsample_num_nn(feats)
                 pred_unums.append(upsample_num)
-    
+                print(f"pred_unums:{pred_unums[0].shape}")
+                print(f"downsample feats:{feats.shape}")
                 # select the first upsample_num xyzs and feats: (b, c, m)
                 if batch_size == 1:
                     xyzs, feats = select_xyzs_and_feats(candidate_xyzs, candidate_feats, upsample_num)
@@ -240,12 +252,15 @@ class Decoder(nn.Module):
                     xyzs, feats = multi_batch_select(candidate_xyzs, candidate_feats, upsample_num, cur_upsample_rate)
     
                 # refine xyzs and feats: (b, c, m)
+                print(f"after select:{feats.shape}")
+            
                 xyzs, feats = refine_nn(xyzs, feats)
                 pred_xyzs.append(xyzs)
 
-                upsample_cnt  -= 1
+                upsample_cnt  = 1
             else:
                 upsample_num = upsample_num_nn(feats)
+                print(f"undownsample:{upsample_num.shape}")
                 pred_unums.append(upsample_num)
                 pred_xyzs.append(xyzs)
 

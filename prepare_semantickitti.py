@@ -124,18 +124,18 @@ def divide_cube(
     # # remove those cubes whose points_num is small than min_num
     del_k = -1
     k_del = []
-    patch_num = 0
-    for k in cubes.keys():
-        patch_num += 1
-        print(len(cubes[k]))
-        if len(cubes[k]) < min_num:
-            label[cubes[k]] = del_k
-            del_k -= 1
-            k_del.append(k)
+    # patch_num = 0
+    # for k in cubes.keys():
+    #     patch_num += 1
+    #     print(len(cubes[k]))
+    #     if len(cubes[k]) < min_num:
+    #         label[cubes[k]] = del_k
+    #         del_k -= 1
+    #         k_del.append(k)
     
-    for k in k_del:
-        del cubes[k]
-    print(f"patch_num{patch_num}")
+    # for k in k_del:
+    #     del cubes[k]
+    # print(f"patch_num{patch_num}")
     for tuple_cube_idx, point_idx in cubes.items():
         dim_cube_num = np.ceil(map_size / cube_size).astype(int)
         # indicate which cube a point belongs to
@@ -230,7 +230,7 @@ def generate_dataset(
 
     with open(
         os.path.join(
-            save_path, dataset_name + f"cubesize{cube_size}.pkl"
+            save_path, dataset_name + f"no_delete_cubesize{cube_size}.pkl"
         ), "wb"
     ) as f:
         pkl.dump(data, f, protocol=2)
@@ -245,7 +245,7 @@ def parse_dataset_args():
         "--data_root", default="./", type=str, help="dir of semantickitti dataset"
     )
     # cube size
-    parser.add_argument("--cube_size", default=6, type=int, help="cube size")
+    parser.add_argument("--cube_size", default=3, type=int, help="cube size")
     # minimum points number in each cube when training
     parser.add_argument(
         "--train_min_num",

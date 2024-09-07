@@ -36,6 +36,7 @@ class PointTransformerLayer(nn.Module):
         )
 
         self.post_conv = nn.Conv1d(args.hidden_dim, out_fdim, 1)
+        self.post_conv2 = nn.Conv1d(in_fdim, out_fdim, 1)
 
 
     def forward(self, q_xyzs, k_xyzs, q_feats, k_feats, v_feats, knn_idx, mask):
@@ -65,7 +66,9 @@ class PointTransformerLayer(nn.Module):
         attn = F.softmax(attn, dim=-1)
 
         res = torch.einsum('bcmk, bcmk->bcm', attn, value + pos_enc)
-        res = self.post_conv(res) + pre
+        # print(res.shape)
+        # print(pre.shape)
+        res = self.post_conv(res)+ self.post_conv2(pre)
 
         return res
 
@@ -156,13 +159,14 @@ class DownsampleLayer(nn.Module):
         self.k = args.k
         self.downsample_rate = args.downsample_rate[layer_idx]
 
-        self.pre_conv = nn.Conv1d(args.dim, args.dim, 1)
+        self.pre_conv = nn.Conv1d(args.in_fdim, args.in_fdim, 1)
 
-        self.feats_agg_nn = PointTransformerLayer(args.dim, args.dim, args)
+
+        self.feats_agg_nn = PointTransformerLayer(args.in_fdim, args.dim, args)
         self.position_embedding_nn = PositionEmbeddingLayer(args)
         self.density_embedding_nn = DensityEmbeddingLayer(args)
 
-        self.post_conv = nn.Conv1d(args.dim * 3, args.dim, 1)
+        self.post_conv = nn.Conv1d(args.dim * 3, args.in_fdim, 1)
 
 
     def get_density(self, sampled_xyzs, xyzs):
@@ -180,13 +184,9 @@ class DownsampleLayer(nn.Module):
 
         # (b, sample_num)
         downsample_num = torch.zeros((batch_size, sample_num)).cuda()
-        # print("downsample_num shape:", downsample_num.shape)  # Should output (batch_size, sample_num)
-        # print("Maximum index in uniques should be <", sample_num)
-
         for i in range(batch_size):
             uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
-            if downsample_num.shape[1] > 0 and uniques.numel() > 0:
-                downsample_num[i][uniques.long()] = counts.float()
+            downsample_num[i][uniques.long()] = counts.float()
 
         # (b, m, k)
         knn_idx = pointops.knnquery_heap(self.k, xyzs_trans, sampled_xyzs_trans).long()
@@ -224,16 +224,13 @@ class DownsampleLayer(nn.Module):
             self.k = xyzs.shape[2]
 
         sample_num = round(xyzs.shape[2] * self.downsample_rate)
-        # print(f"sample_num: {sample_num}")
         # (b, n, 3)
         xyzs_trans = xyzs.permute(0, 2, 1).contiguous()
 
         # FPS, (b, sample_num)
         sample_idx = pointops.furthestsampling(xyzs_trans, sample_num).long()
-        # print(f"sample_idx: {sample_idx.shape}")
         # (b, 3, sample_num)
         sampled_xyzs = index_points(xyzs, sample_idx)
-        # print(f"sampled_xyzs: {sampled_xyzs.shape}")
 
         # get density
         downsample_num, mean_distance, mask, knn_idx = self.get_density(sampled_xyzs, xyzs)
@@ -247,6 +244,10 @@ class DownsampleLayer(nn.Module):
         ancestor_embedding = self.feats_agg_nn(sampled_xyzs, xyzs, sampled_feats, feats, feats, knn_idx, mask)
         position_embedding = self.position_embedding_nn(sampled_xyzs, xyzs, knn_idx, mask)
         density_embedding = self.density_embedding_nn(downsample_num.unsqueeze(1))
+        print(ancestor_embedding.shape)
+        print(position_embedding.shape)
+        print(density_embedding.shape)
+        
         # (b, 3c, m)
         agg_embedding = torch.cat((ancestor_embedding, position_embedding, density_embedding), dim=1)
         # (b, c, m)
@@ -328,6 +329,7 @@ class SubPointConv(nn.Module):
         self.group_num = group_num
         self.group_in_fdim = in_fdim // group_num
         self.group_out_fdim = out_fdim // group_num
+        self.pre_conv = nn.Conv1d(args.in_fdim, args.dim, 1)
 
         # mlp
         if self.mode == 'mlp':
@@ -342,7 +344,10 @@ class SubPointConv(nn.Module):
 
 
     def forward(self, feats):
+        print(feats.shape)
         if self.mode == 'mlp':
+            if feats.shape[1] == 8:
+                feats = self.pre_conv(feats)
             # per-group conv: (b, cin, n, g)
             feats = rearrange(feats, 'b (c g) n -> b c n g', g=self.group_num).contiguous()
             # (b, cout, n, g)
@@ -377,12 +382,14 @@ class XyzsUpsampleLayer(nn.Module):
 
         # scales
         self.scale_nn = SubPointConv(args, args.dim, 1*self.upsample_rate, self.upsample_rate)
-
+        self.pre_conv = nn.Conv1d(args.in_fdim, args.dim, 1)
 
     def forward(self, xyzs, feats):
         # xyzs: (b, 3, n)  feats (b, c, n)
         batch_size = xyzs.shape[0]
         points_num = xyzs.shape[2]
+        if feats.shape[2] == 8:
+            feats = self.pre_conv(feats)
 
         # (b, 43, n, u)
         weights = self.weight_nn(feats)
@@ -414,7 +421,7 @@ class XyzsUpsampleLayer(nn.Module):
 
 
 class FeatsUpsampleLayer(nn.Module):
-    def __init__(self, args, layer_idx, upsample_rate=None, decompress_feats=False):
+    def __init__(self, args, layer_idx, upsample_rate=None, decompress_feats=True):
         super(FeatsUpsampleLayer, self).__init__()
 
         if upsample_rate == None:
@@ -425,9 +432,10 @@ class FeatsUpsampleLayer(nn.Module):
         # weather decompress feats
         self.decompress_feats = decompress_feats
         if self.decompress_feats:
-            self.out_fdim = args.in_fdim-3
+            self.out_fdim = args.in_fdim
         else:
             self.out_fdim = args.dim
+        
 
         self.feats_nn = SubPointConv(args, args.dim, self.out_fdim * self.upsample_rate, self.upsample_rate)
 
@@ -436,11 +444,14 @@ class FeatsUpsampleLayer(nn.Module):
         # (b, c, n, u)
         upsampled_feats = self.feats_nn(feats)
 
-        if self.decompress_feats == False:
-            # shortcut
-            repeated_feats = repeat(feats, 'b c n -> b c n u', u=self.upsample_rate)
-            # (b, c, n, u)
-            upsampled_feats = upsampled_feats + repeated_feats
+        # if self.decompress_feats == False:
+        #     # shortcut
+        #     repeated_feats = repeat(feats, 'b c n -> b c n u', u=self.upsample_rate)
+        #     print(upsampled_feats.shape)
+        #     print(upsampled_feats.shape)
+            
+        #     # (b, c, n, u)
+        #     upsampled_feats = upsampled_feats + repeated_feats
 
         return upsampled_feats
 

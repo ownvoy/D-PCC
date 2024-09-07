@@ -22,7 +22,7 @@ from models.Chamfer3D.dist_chamfer_3D import chamfer_3DDist
 chamfer_dist = chamfer_3DDist()
 
 
-wandb.init(project="dpcc", entity="ownvoy")
+wandb.init(project="dpcc2", entity="ownvoy")
 
 
 def train(args):
@@ -219,7 +219,7 @@ def parse_train_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[2,2,2],
+        default=[6,6,6],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",

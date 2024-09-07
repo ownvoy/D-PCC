@@ -22,32 +22,32 @@ class AutoEncoder(nn.Module):
         self.args = args
 
         self.pre_conv = nn.Sequential(
-            nn.Conv1d(args.in_fdim, args.hidden_dim, 1),
+            nn.Conv1d(args.in_fdim+3, args.hidden_dim, 1),
             nn.GroupNorm(args.ngroups, args.hidden_dim),
             nn.ReLU(),
-            nn.Conv1d(args.hidden_dim, args.dim, 1),
+            nn.Conv1d(args.hidden_dim, args.in_fdim, 1),
         )
         self.encoder = Encoder(args)
-        self.feats_eblock = EntropyBottleneck(args.dim)
+        self.feats_eblock = EntropyBottleneck(args.in_fdim)
         self.decoder = Decoder(args)
 
         if args.quantize_latent_xyzs == True:
             assert args.latent_xyzs_conv_mode in ["edge_conv", "mlp"]
             if args.latent_xyzs_conv_mode == "edge_conv":
-                self.latent_xyzs_analysis = EdgeConv(args, 3, args.dim)
+                self.latent_xyzs_analysis = EdgeConv(args, 3, args.in_fdim)
             else:
                 self.latent_xyzs_analysis = nn.Sequential(
                     nn.Conv1d(3, args.hidden_dim, 1),
                     nn.GroupNorm(args.ngroups, args.hidden_dim),
                     nn.ReLU(inplace=True),
-                    nn.Conv1d(args.hidden_dim, args.dim, 1),
+                    nn.Conv1d(args.hidden_dim, args.in_fdim, 1),
                 )
-            self.xyzs_eblock = EntropyBottleneck(args.dim)
+            self.xyzs_eblock = EntropyBottleneck(args.in_fdim)
             if args.latent_xyzs_conv_mode == "edge_conv":
-                self.latent_xyzs_synthesis = EdgeConv(args, args.dim, 3)
+                self.latent_xyzs_synthesis = EdgeConv(args, args.in_fdim, 3)
             else:
                 self.latent_xyzs_synthesis = nn.Sequential(
-                    nn.Conv1d(args.dim, args.hidden_dim, 1),
+                    nn.Conv1d(args.in_fdim, args.hidden_dim, 1),
                     nn.GroupNorm(args.ngroups, args.hidden_dim),
                     nn.ReLU(inplace=True),
                     nn.Conv1d(args.hidden_dim, 3, 1),
@@ -81,9 +81,10 @@ class AutoEncoder(nn.Module):
         feats = self.pre_conv(feats)
 
         # downsample
-        gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats,downsample_cnt = self.encoder(
+        gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt = self.encoder(
             xyzs, feats
         )
+        print(f"after down sampling feats: {latent_feats.shape}")
 
         # entropy bottleneck: compress latent feats
         latent_feats_hat, latent_feats_likelihoods = self.feats_eblock(latent_feats)
@@ -117,6 +118,8 @@ class AutoEncoder(nn.Module):
         pred_xyzs, pred_unums, pred_mdis, upsampled_feats = self.decoder(
             pred_latent_xyzs, latent_feats_hat, upsample_cnt
         )
+        print("upsampled_feeats shape")
+        print(upsampled_feats.shape)
 
         # get loss
         loss, loss_items, all_pred2gt_idx = self.get_loss(
