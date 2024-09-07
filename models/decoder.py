@@ -214,7 +214,7 @@ class Decoder(nn.Module):
         return pred_mdis
 
 
-    def forward(self, xyzs, feats):
+    def forward(self, xyzs, feats, upsample_cnt):
         # input: (b, c, n)
         batch_size = xyzs.shape[0]
         if self.args.quantize_latent_xyzs == False:
@@ -224,24 +224,30 @@ class Decoder(nn.Module):
         pred_xyzs = []
         pred_unums = []
         for i, (upsample_nn, upsample_num_nn, refine_nn) in enumerate(self.decoder_layers):
-            # upsample xyzs and feats: (b, c, n u)
-            candidate_xyzs, candidate_feats = upsample_nn(xyzs, feats)
+            if upsample_cnt > 0:
+                # upsample xyzs and feats: (b, c, n u)
+                candidate_xyzs, candidate_feats = upsample_nn(xyzs, feats)
+    
+                # predict upsample_num: (b, n)
+                upsample_num = upsample_num_nn(feats)
+                pred_unums.append(upsample_num)
+    
+                # select the first upsample_num xyzs and feats: (b, c, m)
+                if batch_size == 1:
+                    xyzs, feats = select_xyzs_and_feats(candidate_xyzs, candidate_feats, upsample_num)
+                else:
+                    cur_upsample_rate = 1 / self.args.downsample_rate[self.args.layer_num-1-i]
+                    xyzs, feats = multi_batch_select(candidate_xyzs, candidate_feats, upsample_num, cur_upsample_rate)
+    
+                # refine xyzs and feats: (b, c, m)
+                xyzs, feats = refine_nn(xyzs, feats)
+                pred_xyzs.append(xyzs)
 
-            # predict upsample_num: (b, n)
-            upsample_num = upsample_num_nn(feats)
-            pred_unums.append(upsample_num)
-
-            # select the first upsample_num xyzs and feats: (b, c, m)
-            if batch_size == 1:
-                xyzs, feats = select_xyzs_and_feats(candidate_xyzs, candidate_feats, upsample_num)
+                upsample_cnt  -= 1
             else:
-                cur_upsample_rate = 1 / self.args.downsample_rate[self.args.layer_num-1-i]
-                xyzs, feats = multi_batch_select(candidate_xyzs, candidate_feats, upsample_num, cur_upsample_rate)
-
-            # refine xyzs and feats: (b, c, m)
-            xyzs, feats = refine_nn(xyzs, feats)
-
-            pred_xyzs.append(xyzs)
+                upsample_num = upsample_num_nn(feats)
+                pred_unums.append(upsample_num)
+                pred_xyzs.append(xyzs)
 
         # get mean distance in upsampled points set
         pred_mdis = self.get_pred_mdis(latent_xyzs, pred_xyzs, pred_unums)

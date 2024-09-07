@@ -81,7 +81,7 @@ class AutoEncoder(nn.Module):
         feats = self.pre_conv(feats)
 
         # downsample
-        gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats = self.encoder(
+        gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats,downsample_cnt = self.encoder(
             xyzs, feats
         )
 
@@ -90,6 +90,7 @@ class AutoEncoder(nn.Module):
         # feats bpp calculation
         feats_size = (torch.log(latent_feats_likelihoods).sum()) / (-math.log(2))
         feats_bpp = feats_size / points_num
+        
 
         if self.args.quantize_latent_xyzs == True:
             # compress latent xyzs, it is essentially a quantization
@@ -112,8 +113,9 @@ class AutoEncoder(nn.Module):
             xyzs_bpp = xyzs_size / points_num
 
         # upsample
+        upsample_cnt = downsample_cnt
         pred_xyzs, pred_unums, pred_mdis, upsampled_feats = self.decoder(
-            pred_latent_xyzs, latent_feats_hat
+            pred_latent_xyzs, latent_feats_hat, upsample_cnt
         )
 
         # get loss

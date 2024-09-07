@@ -21,13 +21,22 @@ class Encoder(nn.Module):
         gt_xyzs = []
         gt_dnums = []
         gt_mdis = []
-        for encoder_layer in self.encoder_layers:
+        downsample_cnt = 0
+        for layer_idx, encoder_layer in enumerate(self.encoder_layers):
             gt_xyzs.append(xyzs)
-            xyzs, feats, downsample_num, mean_distance = encoder_layer(xyzs, feats)
-            gt_dnums.append(downsample_num)
-            gt_mdis.append(mean_distance)
+            if xyzs.shape[2] // args.downsample_rate[layer_idx]> 0:
+                xyzs, feats, downsample_num, mean_distance = encoder_layer(xyzs, feats)
+                gt_dnums.append(downsample_num)
+                gt_mdis.append(mean_distance)
+                downsample_ cnt +=1
+            else:
+                gt_dnums.append(xyzs.shape[2])
+                gt_mdis.append(0)
+                
+                
+                
 
         latent_xyzs = xyzs
         latent_feats = feats
 
-        return gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats
+        return gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt
