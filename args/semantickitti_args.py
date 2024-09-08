@@ -32,7 +32,7 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="./data/no_delete_cubesize3.pkl",
+        default="../DPCC_data/data/no_delete_cubesize3.pkl",
         type=str,
         help="path to train dataset",
     )
@@ -42,7 +42,7 @@ def parse_semantickitti_args():
 
     parser.add_argument(
         "--test_data_path",
-        default="./data/semantickittino_delete_min10_cubesize3.pkl",
+        default="../DPCC_data/data/no_delete_cubesize3.pkl",
         type=str,
         help="path to test dataset",
     )
@@ -134,7 +134,7 @@ def parse_semantickitti_args():
     # loss
     parser.add_argument(
         "--chamfer_coe",
-        default=0.1,
+        default=0.3,
         type=float,
         help="chamfer loss coefficient for intermediate point clouds",
     )

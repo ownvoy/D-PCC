@@ -244,9 +244,9 @@ class DownsampleLayer(nn.Module):
         ancestor_embedding = self.feats_agg_nn(sampled_xyzs, xyzs, sampled_feats, feats, feats, knn_idx, mask)
         position_embedding = self.position_embedding_nn(sampled_xyzs, xyzs, knn_idx, mask)
         density_embedding = self.density_embedding_nn(downsample_num.unsqueeze(1))
-        print(ancestor_embedding.shape)
-        print(position_embedding.shape)
-        print(density_embedding.shape)
+        # print(ancestor_embedding.shape)
+        # print(position_embedding.shape)
+        # print(density_embedding.shape)
         
         # (b, 3c, m)
         agg_embedding = torch.cat((ancestor_embedding, position_embedding, density_embedding), dim=1)
@@ -344,7 +344,7 @@ class SubPointConv(nn.Module):
 
 
     def forward(self, feats):
-        print(feats.shape)
+        # print(feats.shape)
         if self.mode == 'mlp':
             if feats.shape[1] == 8:
                 feats = self.pre_conv(feats)
@@ -368,6 +368,7 @@ class XyzsUpsampleLayer(nn.Module):
         super(XyzsUpsampleLayer, self).__init__()
 
         if upsample_rate == None:
+            # self.upsample_rate = args.max_upsample_num[layer_idx]
             self.upsample_rate = args.max_upsample_num[layer_idx]
         else:
             self.upsample_rate = upsample_rate
@@ -378,6 +379,7 @@ class XyzsUpsampleLayer(nn.Module):
         self.hypothesis = torch.from_numpy(hypothesis).float().cuda()
 
         # weights
+        
         self.weight_nn = SubPointConv(args, args.dim, 43*self.upsample_rate, self.upsample_rate)
 
         # scales

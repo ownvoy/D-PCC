@@ -127,18 +127,18 @@ class RefineLayer(nn.Module):
     def __init__(self, args, layer_idx):
         super(RefineLayer, self).__init__()
 
-        self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx)
+        self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx, upsample_rate= 1)
                 # self.xyzs_refine_nn = XyzsUpsampleLayer(args, layer_idx, upsample_rate=1)
 
         # decompress normal
-        # if args.compress_feats == True and layer_idx == args.layer_num-1:
-        #     self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=True)
-        # else:
-        #     self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=False)
         if args.compress_feats == True and layer_idx == args.layer_num-1:
-            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, decompress_feats=True)
+            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=True)
         else:
-            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, decompress_feats=False)
+            self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, upsample_rate=1, decompress_feats=False)
+        # if args.compress_feats == True and layer_idx == args.layer_num-1:
+        #     self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, decompress_feats=True)
+        # else:
+        #     self.feats_refine_nn = FeatsUpsampleLayer(args, layer_idx, decompress_feats=False)
 
 
     def forward(self, xyzs, feats):
@@ -237,34 +237,46 @@ class Decoder(nn.Module):
             if upsample_cnt > 0:
                 # upsample xyzs and feats: (b, c, n u)
                 candidate_xyzs, candidate_feats = upsample_nn(xyzs, feats)
-                print(f"candidate_feats:{candidate_feats.shape}")
+                print(f"can didate size:{candidate_feats.shape}")
+                xyzs = rearrange(candidate_xyzs, "b c n u -> b c (n u)")
+                feats  = rearrange(candidate_feats, "b c n u -> b c (n u)")
+                print(f"after rearrange size:{feats.shape}")
+
+                
+                # print(f"candidate_feats:{candidate_feats.shape}")
     
-                # predict upsample_num: (b, n)
-                upsample_num = upsample_num_nn(feats)
-                pred_unums.append(upsample_num)
-                print(f"pred_unums:{pred_unums[0].shape}")
-                print(f"downsample feats:{feats.shape}")
-                # select the first upsample_num xyzs and feats: (b, c, m)
-                if batch_size == 1:
-                    xyzs, feats = select_xyzs_and_feats(candidate_xyzs, candidate_feats, upsample_num)
-                else:
-                    cur_upsample_rate = 1 / self.args.downsample_rate[self.args.layer_num-1-i]
-                    xyzs, feats = multi_batch_select(candidate_xyzs, candidate_feats, upsample_num, cur_upsample_rate)
+                # # predict upsample_num: (b, n)
+                # # upsample_num = self.args.max_upsample_num[layer_idx]
+                # # upsample_num = upsample_num_nn(feats)
+                # upsample_num = torch.tensor([[self.args.max_upsample_num[i]]]).to(torch.device('cuda'))
+                # pred_unums.append(upsample_num)
+                # print(f"pred_unums:{pred_unums[0].shape}")
+                # print(f"downsample feats:{feats.shape}")
+                # # select the first upsample_num xyzs and feats: (b, c, m)
+                # if batch_size == 1:
+                #     xyzs, feats = select_xyzs_and_feats(candidate_xyzs, candidate_feats, upsample_num)
+                # else:
+                #     cur_upsample_rate = 1 / self.args.downsample_rate[self.args.layer_num-1-i]
+                #     xyzs, feats = multi_batch_select(candidate_xyzs, candidate_feats, upsample_num, cur_upsample_rate)
     
-                # refine xyzs and feats: (b, c, m)
-                print(f"after select:{feats.shape}")
+                # # refine xyzs and feats: (b, c, m)
+                # print(f"after select:{feats.shape}")
             
                 xyzs, feats = refine_nn(xyzs, feats)
                 pred_xyzs.append(xyzs)
 
-                upsample_cnt  = 1
+                upsample_cnt -= 1
             else:
-                upsample_num = upsample_num_nn(feats)
-                print(f"undownsample:{upsample_num.shape}")
-                pred_unums.append(upsample_num)
+                # upsample_num = upsample_num_nn(feats)
+                # feats
+                # upsample_num = torch.tensor([[self.args.max_upsample_num[i]]]).to(torch.device('cuda'))
+                # print(f"undownsample:{upsample_num.shape}")
+                # pred_unums.append(upsample_num)
+                xyzs, feats = refine_nn(xyzs, feats)
                 pred_xyzs.append(xyzs)
 
         # get mean distance in upsampled points set
-        pred_mdis = self.get_pred_mdis(latent_xyzs, pred_xyzs, pred_unums)
+        # pred_mdis = self.get_pred_mdis(latent_xyzs, pred_xyzs, pred_unums)
 
-        return pred_xyzs, pred_unums, pred_mdis, feats
+        # return pred_xyzs, pred_unums, pred_mdis, feats
+        return pred_xyzs, feats

@@ -60,7 +60,7 @@ def compress(args, model, xyzs, feats):
     feats = model.pre_conv(feats)
 
     # encoder forward
-    gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats = model.encoder(xyzs, feats)
+    gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt = model.encoder(xyzs, feats)
     # decompress size
     feats_size = latent_feats.size()[2:]
 
@@ -96,10 +96,11 @@ def compress(args, model, xyzs, feats):
         feats_size,
         encode_time,
         actual_bpp,
+        downsample_cnt
     )
 
 
-def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size):
+def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt):
     decode_start = time.time()
     # decompress latent xyzs
     if args.quantize_latent_xyzs == True:
@@ -114,8 +115,8 @@ def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_
     latent_feats_hat = model.feats_eblock.decompress(latent_feats_str, feats_size)
 
     # decoder forward
-    pred_xyzs, pred_unums, pred_mdis, upsampled_feats = model.decoder(
-        latent_xyzs_hat, latent_feats_hat
+    pred_xyzs, upsampled_feats = model.decoder(
+        latent_xyzs_hat, latent_feats_hat, upsample_cnt
     )
 
     decode_time = time.time() - decode_start
@@ -163,10 +164,27 @@ def test_xyzs_feats(args):
         for i, input_dict in enumerate(test_loader):
             # input: (b, n, c)
             input = input_dict["xyzs"].cuda()
+            
+            # input: (b, c, n)
+            input = input.permute(0, 2, 1).contiguous()
+
+            feats = input_dict["feats"].cuda().permute(0, 2, 1).contiguous()
+            input = torch.cat((input, feats), dim=1)
+            # print(input.shape)
+
+            # model forward
+            decompressed_xyzs, loss, loss_items, bpp = model(input)
+
+
+            
+            # input: (b, n, c)
+            input = input_dict["xyzs"].cuda()
+            
             # feats : (b, n, c)
             gt_feats = input_dict["feats"].cuda()
             # (b, c, n)
             input = input.permute(0, 2, 1).contiguous()
+            
             # concat feats
             input = torch.cat((input, gt_feats.permute(0, 2, 1).contiguous()), dim=1)
             xyzs = input[:, :3, :].contiguous()
@@ -181,16 +199,18 @@ def test_xyzs_feats(args):
                 feats_size,
                 encode_time,
                 actual_bpp,
+                downsample_cnt
             ) = compress(args, model, xyzs, gt_feats)
 
             # update metrics
             patch_encode_time.update(encode_time)
             patch_bpp.update(actual_bpp)
             pcd_bpp.update(actual_bpp)
+            upsample_cnt = downsample_cnt
 
             # decompress
             pred_patches, upsampled_feats, decode_time = decompress(
-                args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size
+                args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt
             )
             pred_feats = torch.tanh(upsampled_feats).permute(0, 2, 1).contiguous()
             gt_feats = gt_feats.permute(0,2,1).contiguous()
@@ -336,21 +356,21 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="./model_checkpoints/cube3_epoch_50.pth", type=str, help="path to ckpt"
+        "--model_path", default="./model_checkpoints/cube3_epoch_49.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"
     )
     parser.add_argument(
         "--downsample_rate",
-        default=[1 / 3, 1 / 3, 1 / 3],
+        default=[1 / 6, 1 / 6, 1 / 6],
         nargs="+",
         type=float,
         help="downsample rate",
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[11, 11, 11],
+        default=[6, 6, 6],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",

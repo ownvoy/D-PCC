@@ -53,19 +53,19 @@ class AutoEncoder(nn.Module):
                     nn.Conv1d(args.hidden_dim, 3, 1),
                 )
 
-    def get_loss(self, gt_xyzs, gt_dnums, gt_mdis, pred_xyzs, pred_unums, pred_mdis):
+    def get_loss(self, gt_xyzs, gt_dnums, gt_mdis, pred_xyzs):
         chamfer_loss, all_pred2gt_idx = get_chamfer_loss(gt_xyzs, pred_xyzs, self.args)
-        density_loss = get_density_loss(
-            gt_dnums, gt_mdis, pred_unums, pred_mdis, all_pred2gt_idx, self.args
-        )
-        pts_num_loss = get_pts_num_loss(gt_xyzs, pred_unums, self.args)
+        # density_loss = get_density_loss(
+        #     gt_dnums, gt_mdis, pred_unums, pred_mdis, all_pred2gt_idx, self.args
+        # )
+        # pts_num_loss = get_pts_num_loss(gt_xyzs, pred_unums, self.args)
 
-        loss = chamfer_loss + density_loss + pts_num_loss
-
+        # loss = chamfer_loss + density_loss + pts_num_loss
+        loss = chamfer_loss
         loss_items = {
             "chamfer_loss": chamfer_loss.item(),
-            "density_loss": density_loss.item(),
-            "pts_num_loss": pts_num_loss.item(),
+            # "density_loss": density_loss.item(),
+            # "pts_num_loss": pts_num_loss.item(),
         }
 
         return loss, loss_items, all_pred2gt_idx
@@ -84,7 +84,7 @@ class AutoEncoder(nn.Module):
         gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt = self.encoder(
             xyzs, feats
         )
-        print(f"after down sampling feats: {latent_feats.shape}")
+        print(f"after downsampling feats: {latent_feats.shape}")
 
         # entropy bottleneck: compress latent feats
         latent_feats_hat, latent_feats_likelihoods = self.feats_eblock(latent_feats)
@@ -115,7 +115,10 @@ class AutoEncoder(nn.Module):
 
         # upsample
         upsample_cnt = downsample_cnt
-        pred_xyzs, pred_unums, pred_mdis, upsampled_feats = self.decoder(
+        # pred_xyzs, pred_unums, pred_mdis, upsampled_feats = self.decoder(
+        #     pred_latent_xyzs, latent_feats_hat, upsample_cnt
+        # )
+        pred_xyzs, upsampled_feats = self.decoder(
             pred_latent_xyzs, latent_feats_hat, upsample_cnt
         )
         print("upsampled_feeats shape")
@@ -123,7 +126,7 @@ class AutoEncoder(nn.Module):
 
         # get loss
         loss, loss_items, all_pred2gt_idx = self.get_loss(
-            gt_xyzs, gt_dnums, gt_mdis, pred_xyzs, pred_unums, pred_mdis
+            gt_xyzs, gt_dnums, gt_mdis, pred_xyzs
         )
 
         # latent_xyzs_loss

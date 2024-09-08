@@ -23,19 +23,20 @@ class Encoder(nn.Module):
         gt_dnums = []
         gt_mdis = []
         downsample_cnt = 0
+        print(f"downsampling {downsample_cnt}: {feats.shape}")
         for layer_idx, encoder_layer in enumerate(self.encoder_layers):
             # print(f"xyzs shape:{xyzs.shape[2]}")
-            print(xyzs.shape[2] * self.downsample_rate[layer_idx])
+            # print(xyzs.shape[2] * self.downsample_rate[layer_idx])
             gt_xyzs.append(xyzs)
             if xyzs.shape[2] * self.downsample_rate[layer_idx]>= 1:
                 xyzs, feats, downsample_num, mean_distance = encoder_layer(xyzs, feats)
-                print(f"downsample_num:{downsample_num.shape}")
-                # print(f"mean_distance:{mean_distance.shape}")
+
                 gt_dnums.append(downsample_num)
                 gt_mdis.append(mean_distance)
                 downsample_cnt +=1
+                print(f"downsampling {downsample_cnt}: {feats.shape}")
             else:
-                print(torch.tensor([[xyzs.shape[2]]]).shape)
+                print(f"downsampling {downsample_cnt}: {feats.shape}")
                 gt_dnums.append(torch.tensor([[xyzs.shape[2]]]).to(torch.device('cuda')))
                 gt_mdis.append(torch.tensor([[0]]).to(torch.device('cuda')))
                 

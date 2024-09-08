@@ -99,8 +99,8 @@ def train(args):
             decompressed_xyzs, loss, loss_items, bpp = model(input)
             epoch_loss.update(loss.item())
             epoch_chamfer_loss.update(loss_items["chamfer_loss"])
-            epoch_density_loss.update(loss_items["density_loss"])
-            epoch_pts_num_loss.update(loss_items["pts_num_loss"])
+            # epoch_density_loss.update(loss_items["density_loss"])
+            # epoch_pts_num_loss.update(loss_items["pts_num_loss"])
             epoch_latent_xyzs_loss.update(loss_items["latent_xyzs_loss"])
             epoch_feats_loss.update(loss_items["feats_loss"])
             epoch_bpp_loss.update(loss_items["bpp_loss"])
@@ -128,8 +128,8 @@ def train(args):
             if (i + 1) % args.print_freq == 0:
                 print(
                     "train epoch: %d/%d, iters: %d/%d, loss: %f, avg chamfer loss: %f, "
-                    "avg density loss: %f, avg pts num loss: %f, avg latent xyzs loss: %f, "
-                    "avg feats loss: %f, avg bpp loss: %f, avg aux loss: %f"
+                    "avg latent xyzs loss: %f, avg feats loss: %f, "
+                    "avg bpp loss: %f, avg aux loss: %f"
                     % (
                         epoch + 1,
                         args.epochs,
@@ -137,8 +137,8 @@ def train(args):
                         len(train_loader),
                         epoch_loss.get_avg(),
                         epoch_chamfer_loss.get_avg(),
-                        epoch_density_loss.get_avg(),
-                        epoch_pts_num_loss.get_avg(),
+                        # epoch_density_loss.get_avg(),
+                        # epoch_pts_num_loss.get_avg(),
                         epoch_latent_xyzs_loss.get_avg(),
                         epoch_feats_loss.get_avg(),
                         epoch_bpp_loss.get_avg(),
@@ -152,8 +152,8 @@ def train(args):
         interval = time.time() - start
         print(
             "train epoch: %d/%d, time: %d mins %.1f secs, loss: %f, avg chamfer loss: %f, "
-            "avg density loss: %f, avg pts num loss: %f, avg latent xyzs loss: %f, "
-            "avg feats loss: %f, avg bpp loss: %f, avg aux loss: %f"
+            "avg latent xyzs loss: %f, avg feats loss: %f, "
+            "avg bpp loss: %f, avg aux loss: %f"
             % (
                 epoch + 1,
                 args.epochs,
@@ -161,8 +161,8 @@ def train(args):
                 interval % 60,
                 epoch_loss.get_avg(),
                 epoch_chamfer_loss.get_avg(),
-                epoch_density_loss.get_avg(),
-                epoch_pts_num_loss.get_avg(),
+                # epoch_density_loss.get_avg(),
+                # epoch_pts_num_loss.get_avg(),
                 epoch_latent_xyzs_loss.get_avg(),
                 epoch_feats_loss.get_avg(),
                 epoch_bpp_loss.get_avg(),
@@ -174,8 +174,8 @@ def train(args):
                 "epoch": epoch + 1,
                 "loss": epoch_loss.get_avg(),
                 "avg chamfer loss": epoch_chamfer_loss.get_avg(),
-                "avg density loss": epoch_density_loss.get_avg(),
-                "avg pts num loss": epoch_pts_num_loss.get_avg(),
+                # "avg density loss": epoch_density_loss.get_avg(),
+                # "avg pts num loss": epoch_pts_num_loss.get_avg(),
                 "avg latent xyzs loss": epoch_latent_xyzs_loss.get_avg(),
                 "avg feats loss": epoch_feats_loss.get_avg(),
                 "avg bpp loss": epoch_bpp_loss.get_avg(),
@@ -212,7 +212,7 @@ def parse_train_args():
     )
     parser.add_argument(
         "--downsample_rate",
-        default=[1 / 2, 1 / 2, 1 / 2],
+        default=[1 / 6, 1 / 6, 1 / 6],
         nargs="+",
         type=float,
         help="downsample rate",
