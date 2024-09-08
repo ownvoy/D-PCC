@@ -223,7 +223,7 @@ class DownsampleLayer(nn.Module):
         if self.k > xyzs.shape[2]:
             self.k = xyzs.shape[2]
 
-        sample_num = round(xyzs.shape[2] * self.downsample_rate)
+        sample_num = int(xyzs.shape[2] * self.downsample_rate)
         # (b, n, 3)
         xyzs_trans = xyzs.permute(0, 2, 1).contiguous()
 
@@ -445,16 +445,7 @@ class FeatsUpsampleLayer(nn.Module):
     def forward(self, feats):
         # (b, c, n, u)
         upsampled_feats = self.feats_nn(feats)
-
-        # if self.decompress_feats == False:
-        #     # shortcut
-        #     repeated_feats = repeat(feats, 'b c n -> b c n u', u=self.upsample_rate)
-        #     print(upsampled_feats.shape)
-        #     print(upsampled_feats.shape)
-            
-        #     # (b, c, n, u)
-        #     upsampled_feats = upsampled_feats + repeated_feats
-
+        
         return upsampled_feats
 
 

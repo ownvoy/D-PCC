@@ -81,7 +81,7 @@ class AutoEncoder(nn.Module):
         feats = self.pre_conv(feats)
 
         # downsample
-        gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt = self.encoder(
+        gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt, remainders = self.encoder(
             xyzs, feats
         )
         print(f"after downsampling feats: {latent_feats.shape}")
@@ -119,7 +119,7 @@ class AutoEncoder(nn.Module):
         #     pred_latent_xyzs, latent_feats_hat, upsample_cnt
         # )
         pred_xyzs, upsampled_feats = self.decoder(
-            pred_latent_xyzs, latent_feats_hat, upsample_cnt
+            pred_latent_xyzs, latent_feats_hat, upsample_cnt, remainders
         )
         print("upsampled_feeats shape")
         print(upsampled_feats.shape)
