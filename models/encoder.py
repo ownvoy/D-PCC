@@ -30,7 +30,9 @@ class Encoder(nn.Module):
             # print(xyzs.shape[2] * self.downsample_rate[layer_idx])
             gt_xyzs.append(xyzs)
             if xyzs.shape[2] * self.downsample_rate[layer_idx]>= 1:
-                remainder = xyzs.shape[2] % self.downsample_rate[layer_idx]
+                quotient = xyzs.shape[2] * self.downsample_rate[layer_idx]
+                quotient = int(quotient)
+                remainder = xyzs.shape[2]- int(quotient / self.downsample_rate[layer_idx])
                 remainders.append(remainder) 
                 xyzs, feats, downsample_num, mean_distance = encoder_layer(xyzs, feats)
                 gt_dnums.append(downsample_num)
@@ -46,5 +48,6 @@ class Encoder(nn.Module):
             
         latent_xyzs = xyzs
         latent_feats = feats
+        remainders  = remainders[::-1]
 
         return gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt, remainders

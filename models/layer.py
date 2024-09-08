@@ -390,8 +390,8 @@ class XyzsUpsampleLayer(nn.Module):
         # xyzs: (b, 3, n)  feats (b, c, n)
         batch_size = xyzs.shape[0]
         points_num = xyzs.shape[2]
-        if feats.shape[2] == 8:
-            feats = self.pre_conv(feats)
+        # if feats.shape[2] == 8:
+        #     feats = self.pre_conv(feats)
 
         # (b, 43, n, u)
         weights = self.weight_nn(feats)

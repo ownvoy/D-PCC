@@ -240,15 +240,23 @@ class Decoder(nn.Module):
                 xyzs = rearrange(candidate_xyzs, "b c n u -> b c (n u)")
                 feats  = rearrange(candidate_feats, "b c n u -> b c (n u)")
                 print(f"after rearrange size:{feats.shape}")
-                
-                candidate_mean_xyzs, candidate_mean_feats = upsample_nn_remainder(xyzs, feats)
-                mean_xyzs = rearrange(candidate_mean_xyzs, "b c n u -> b c (n u)")
-                mean_feats  = rearrange(candidate_mean_feats, "b c n u -> b c (n u)")
+                print(f"!!!!mean feats size:{mean_feats.shape}")
+                candidate_mean_xyzs, candidate_mean_feats = upsample_nn_remainder(mean_xyzs, mean_feats)
+                print(f"!!!!candidate mean_feats size:{candidate_mean_feats.shape}")
+                mean_feats = candidate_mean_feats.squeeze(2)
+                mean_xyzs =  candidate_mean_xyzs.squeeze(2)
+                # mean_xyzs = rearrange(candidate_mean_xyzs, "b c n u -> b c (n u)")
+                # mean_feats  = rearrange(candidate_mean_feats, "b c n u -> b c (n u)")
+                print(f"!!!!remainder_feats size:{mean_feats.shape}")
+                print(f"!!!! decoder remainders:{remainders}")
                 remainder_xyzs = mean_xyzs[:,:,:remainders[i]]
                 remainder_feats = mean_feats[:,:,:remainders[i]]
+                print(f"!!!!remainder_feats size:{remainder_feats.shape}")
 
                 xyzs = torch.cat((xyzs, remainder_xyzs), dim=2)
                 feats = torch.cat((feats, remainder_feats), dim=2)
+                print(f"!!!!concat mean_feats size:{feats.shape}")
+                
                 xyzs, feats = refine_nn(xyzs, feats)
                 pred_xyzs.append(xyzs)
                 upsample_cnt -= 1
