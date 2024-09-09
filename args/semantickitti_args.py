@@ -37,7 +37,7 @@ def parse_semantickitti_args():
         help="path to train dataset",
     )
     parser.add_argument(
-        "--train_cube_size", default=6, type=int, help="cube size of train dataset"
+        "--train_cube_size", default=3, type=int, help="cube size of train dataset"
     )
 
     parser.add_argument(
@@ -134,7 +134,7 @@ def parse_semantickitti_args():
     # loss
     parser.add_argument(
         "--chamfer_coe",
-        default=0.3,
+        default=0.5,
         type=float,
         help="chamfer loss coefficient for intermediate point clouds",
     )
@@ -145,7 +145,7 @@ def parse_semantickitti_args():
         "--feats_coe", default=1e-2, type=float, help="normal loss coefficient"
     )
     parser.add_argument(
-        "--bpp_lambda", default=5e-4, type=float, help="bpp loss coefficient"
+        "--bpp_lambda", default=1e-2, type=float, help="bpp loss coefficient"
     )
     parser.add_argument(
         "--mean_distance_coe",

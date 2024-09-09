@@ -60,7 +60,7 @@ def compress(args, model, xyzs, feats):
     feats = model.pre_conv(feats)
 
     # encoder forward
-    gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt = model.encoder(xyzs, feats)
+    gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt, remainders = model.encoder(xyzs, feats)
     # decompress size
     feats_size = latent_feats.size()[2:]
 
@@ -96,11 +96,12 @@ def compress(args, model, xyzs, feats):
         feats_size,
         encode_time,
         actual_bpp,
-        downsample_cnt
+        downsample_cnt,
+        remainders
     )
 
 
-def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt):
+def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders):
     decode_start = time.time()
     # decompress latent xyzs
     if args.quantize_latent_xyzs == True:
@@ -116,7 +117,7 @@ def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_
 
     # decoder forward
     pred_xyzs, upsampled_feats = model.decoder(
-        latent_xyzs_hat, latent_feats_hat, upsample_cnt
+        latent_xyzs_hat, latent_feats_hat, upsample_cnt, remainders
     )
 
     decode_time = time.time() - decode_start
@@ -199,7 +200,8 @@ def test_xyzs_feats(args):
                 feats_size,
                 encode_time,
                 actual_bpp,
-                downsample_cnt
+                downsample_cnt,
+                remainders
             ) = compress(args, model, xyzs, gt_feats)
 
             # update metrics
@@ -210,7 +212,7 @@ def test_xyzs_feats(args):
 
             # decompress
             pred_patches, upsampled_feats, decode_time = decompress(
-                args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt
+                args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders
             )
             pred_feats = torch.tanh(upsampled_feats).permute(0, 2, 1).contiguous()
             gt_feats = gt_feats.permute(0,2,1).contiguous()
@@ -356,7 +358,7 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="./model_checkpoints/cube3_epoch_49.pth", type=str, help="path to ckpt"
+        "--model_path", default="./model_checkpoints/cube6_epoch_50.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"
