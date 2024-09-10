@@ -33,8 +33,11 @@ class Encoder(nn.Module):
                 quotient = xyzs.shape[2] * self.downsample_rate[layer_idx]
                 quotient = int(quotient)
                 remainder = xyzs.shape[2]- int(quotient / self.downsample_rate[layer_idx])
-                remainders.append(remainder) 
+                remainders.append(remainder)
+                
                 xyzs, feats, downsample_num, mean_distance = encoder_layer(xyzs, feats)
+                print(f"dnum element:{downsample_num}")
+                print(f"dnum shape:{downsample_num.shape}")
                 gt_dnums.append(downsample_num)
                 gt_mdis.append(mean_distance)
                 downsample_cnt +=1
@@ -42,12 +45,13 @@ class Encoder(nn.Module):
                 print(f"remainder {remainders[layer_idx]}")
             else:
                 print(f"downsampling {downsample_cnt}: {feats.shape}")
-                gt_dnums.append(torch.tensor([[xyzs.shape[2]]]).to(torch.device('cuda')))
+                # gt_dnums.append(torch.tensor([[xyzs.shape[2]]]).to(torch.device('cuda')))
                 gt_mdis.append(torch.tensor([[0]]).to(torch.device('cuda')))
                 
             
         latent_xyzs = xyzs
         latent_feats = feats
         remainders  = remainders[::-1]
+        gt_dnums = gt_dnums[::-1]
 
         return gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt, remainders

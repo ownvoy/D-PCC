@@ -119,7 +119,7 @@ class AutoEncoder(nn.Module):
         #     pred_latent_xyzs, latent_feats_hat, upsample_cnt
         # )
         pred_xyzs, upsampled_feats = self.decoder(
-            pred_latent_xyzs, latent_feats_hat, upsample_cnt, remainders
+            pred_latent_xyzs, latent_feats_hat, upsample_cnt, remainders, gt_dnums
         )
         print("upsampled_feeats shape")
         print(upsampled_feats.shape)

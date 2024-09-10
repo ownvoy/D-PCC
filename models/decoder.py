@@ -31,7 +31,9 @@ def select_xyzs_and_feats(candidate_xyzs, candidate_feats, upsample_num):
 
     # (n, max_upsample_num)
     mask = torch.arange(0, max_upsample_num).cuda().view(1, -1).repeat(points_num, 1)
+    # print(f"mask: {mask}")
     cur_upsample_num = upsample_num[0].view(-1, 1)
+    # print(f"cur upsample num{cur_upsample_num.shape}")
     mask = torch.where(mask >= cur_upsample_num, 0, 1)
     # select the first upsample_num xyzs and feats: (m)
     mask = mask.view(-1)
@@ -220,7 +222,7 @@ class Decoder(nn.Module):
         return pred_mdis
 
 
-    def forward(self, xyzs, feats, upsample_cnt, remainders):
+    def forward(self, xyzs, feats, upsample_cnt, remainders, gt_dnums):
         # input: (b, c, n)
         batch_size = xyzs.shape[0]
         if self.args.quantize_latent_xyzs == False:
@@ -236,10 +238,13 @@ class Decoder(nn.Module):
                 
                 # upsample xyzs and feats: (b, c, n u)
                 candidate_xyzs, candidate_feats = upsample_nn(xyzs, feats)
-                print(f"can didate size:{candidate_feats.shape}")
-                xyzs = rearrange(candidate_xyzs, "b c n u -> b c (n u)")
-                feats  = rearrange(candidate_feats, "b c n u -> b c (n u)")
-                print(f"after rearrange size:{feats.shape}")
+                print(f"candidate size:{candidate_feats.shape}")
+                print(f"gt dnum size:{gt_dnums[i].shape}" )
+                # xyzs = rearrange(candidate_xyzs, "b c n u -> b c (n u)")
+                # feats  = rearrange(candidate_feats, "b c n u -> b c (n u)")
+                # print(f"after rearrange size:{feats.shape}")
+                xyzs, feats = select_xyzs_and_feats(candidate_xyzs, candidate_feats, gt_dnums[i])
+                print(f"after selectiong size:{feats.shape}")
                 print(f"!!!!mean feats size:{mean_feats.shape}")
                 candidate_mean_xyzs, candidate_mean_feats = upsample_nn_remainder(mean_xyzs, mean_feats)
                 print(f"!!!!candidate mean_feats size:{candidate_mean_feats.shape}")
