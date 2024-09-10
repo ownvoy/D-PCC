@@ -97,11 +97,12 @@ def compress(args, model, xyzs, feats):
         encode_time,
         actual_bpp,
         downsample_cnt,
-        remainders
+        remainders,
+        gt_dnums
     )
 
 
-def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders):
+def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders, gt_dnums):
     decode_start = time.time()
     # decompress latent xyzs
     if args.quantize_latent_xyzs == True:
@@ -117,7 +118,7 @@ def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_
 
     # decoder forward
     pred_xyzs, upsampled_feats = model.decoder(
-        latent_xyzs_hat, latent_feats_hat, upsample_cnt, remainders
+        latent_xyzs_hat, latent_feats_hat, upsample_cnt, remainders, gt_dnums
     )
 
     decode_time = time.time() - decode_start
@@ -201,7 +202,8 @@ def test_xyzs_feats(args):
                 encode_time,
                 actual_bpp,
                 downsample_cnt,
-                remainders
+                remainders,
+                gt_dnums
             ) = compress(args, model, xyzs, gt_feats)
 
             # update metrics
@@ -212,7 +214,7 @@ def test_xyzs_feats(args):
 
             # decompress
             pred_patches, upsampled_feats, decode_time = decompress(
-                args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders
+                args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders, gt_dnums
             )
             pred_feats = torch.tanh(upsampled_feats).permute(0, 2, 1).contiguous()
             gt_feats = gt_feats.permute(0,2,1).contiguous()
@@ -358,7 +360,7 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="./model_checkpoints/cube6_epoch_50.pth", type=str, help="path to ckpt"
+        "--model_path", default="./model_checkpoints/cube3_epoch_28.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"
@@ -372,7 +374,7 @@ def parse_test_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[6, 6, 6],
+        default=[80,80,80],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",
