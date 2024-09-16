@@ -73,7 +73,7 @@ class AutoEncoder(nn.Module):
     def forward(self, input):
         # input: (b, c, n)
         points_num = input.shape[0] * input.shape[2]
-        xyzs = input[:, :3, :].contiguous()
+        xyzs = input[:, :3, :].contiguous()      
         gt_feats = input[:, 3:, :].contiguous()
         feats = input
 

@@ -32,7 +32,7 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="../DPCC_data/data/no_delete_cubesize3.pkl",
+        default="/home/jovyan/wonjun/D-PCC/data/semantickittino_delete_cubesize3.pkl",
         type=str,
         help="path to train dataset",
     )
@@ -42,7 +42,7 @@ def parse_semantickitti_args():
 
     parser.add_argument(
         "--test_data_path",
-        default="../DPCC_data/data/no_delete_cubesize3.pkl",
+        default="/home/jovyan/wonjun/D-PCC/data/semantickittino_delete_cubesize3.pkl",
         type=str,
         help="path to test dataset",
     )
@@ -87,7 +87,7 @@ def parse_semantickitti_args():
     )
     parser.add_argument(
         "--in_fdim",
-        default=8,
+        default=59,
         type=int,
         help="input dimension, may contain attributes",
     )
@@ -110,7 +110,7 @@ def parse_semantickitti_args():
     parser.add_argument(
         "--layer_num", default=3, type=int, help="downsample/upsmaple stage"
     )
-    parser.add_argument("--dim", default=6, type=int, help="feature dimension, same with max upsample")
+    parser.add_argument("--dim", default=80, type=int, help="feature dimension, same with max upsample")
     parser.add_argument("--hidden_dim", default=64, type=int, help="hiddem dimension")
     parser.add_argument("--ngroups", default=1, type=int, help="groups for groupnorm")
     parser.add_argument(

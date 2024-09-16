@@ -1,7 +1,7 @@
 import torch
 import os
 import sys
-
+import struct
 sys.path.append(os.getcwd())
 import numpy as np
 from models.autoencoder import AutoEncoder
@@ -360,7 +360,7 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="./model_checkpoints/cube3_epoch_28.pth", type=str, help="path to ckpt"
+        "--model_path", default="./model_checkpoints/cube3_epoch_1.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"

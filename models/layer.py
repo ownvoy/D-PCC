@@ -324,6 +324,7 @@ class SubPointConv(nn.Module):
         super(SubPointConv, self).__init__()
 
         assert args.sub_point_conv_mode in ['mlp', 'edge_conv']
+        self.args = args
         self.mode = args.sub_point_conv_mode
         self.hidden_dim = args.hidden_dim
         self.group_num = group_num
@@ -346,7 +347,7 @@ class SubPointConv(nn.Module):
     def forward(self, feats):
         # print(feats.shape)
         if self.mode == 'mlp':
-            if feats.shape[1] == 8:
+            if feats.shape[1] == self.args.in_fdim:
                 feats = self.pre_conv(feats)
             # per-group conv: (b, cin, n, g)
             feats = rearrange(feats, 'b (c g) n -> b c n g', g=self.group_num).contiguous()

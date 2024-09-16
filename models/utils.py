@@ -5,7 +5,7 @@ from einops import rearrange
 import open3d as o3d
 import random
 import argparse
-
+import struct
 
 class AverageMeter(object):
     def __init__(self):
@@ -114,34 +114,46 @@ def save_pcd_pred(
 
 
 def save_pcd(dir, name, xyzs, feats):
-    # input: (n, 3)
+    # Inputs:
+    # xyzs: an (n, 3) numpy array for x, y, z coordinates
+    # feats: an (n, 46) numpy array for features including normals, other features, and transformations
+    # Ensure that xyzs and feats arrays are properly aligned in terms of row count
+    
     path = os.path.join(dir, name)
-    f = open(path, "w")
-    f.write("ply\n")
-    f.write("format ascii 1.0\n")
-    f.write("element vertex " + str(xyzs.shape[0]) + "\n")
-    f.write("property float x\n")
-    f.write("property float y\n")
-    f.write("property float z\n")
-    f.write("property float nx\n")
-    f.write("property float ny\n")
-    f.write("property float nz\n")
-    f.write("property float opacity\n")
-    f.write("property float scale_0\n")
-    f.write("property float scale_1\n")
-    f.write("property float scale_2\n")
-    f.write("property float rot_0\n")
-    f.write("property float rot_1\n")
-    f.write("property float rot_2\n")
-    f.write("property float rot_3\n")
-    f.write("element face 0\n")
-    f.write("property list uchar int vertex_indices\n")
-    f.write("end_header\n")
-    f.close()
-
+    header = [
+        "ply",
+        "format binary_little_endian 1.0",
+        f"element vertex {xyzs.shape[0]}",
+        "property float x",
+        "property float y",
+        "property float z",
+        "property float nx",
+        "property float ny",
+        "property float nz",
+        *["property float f_dc_{}".format(i) for i in range(3)],
+        *["property float f_rest_{}".format(i) for i in range(45)],
+        "property float opacity",
+        "property float scale_0",
+        "property float scale_1",
+        "property float scale_2",
+        "property float rot_0",
+        "property float rot_1",
+        "property float rot_2",
+        "property float rot_3",
+        "end_header"
+    ]
     with open(path, "ab") as f:
         xyzs_and_feats = np.concatenate((xyzs, feats), axis=1)
         np.savetxt(f, xyzs_and_feats, fmt="%s")
+    # with open(path, 'wb') as f:
+    #     f.write('\n'.join(header).encode('utf-8'))
+    #     f.write(b'\n')
+
+    #     # Prepare data for binary format
+    #     combined_data = np.concatenate((xyzs, feats), axis=1)
+    #     for row in combined_data:
+    #         packed_data = struct.pack('<' + 'f' * combined_data.shape[1], *row)
+    #         f.write(packed_data)
 
 
 def str2bool(val):

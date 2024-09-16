@@ -93,6 +93,8 @@ def get_feats_loss(gt_feats, pred_feats, pred2gt_idx, args):
     mes_loss = nn.MSELoss()
 
     nearest_feats = index_points(gt_feats, pred2gt_idx)
+    # print(f"nearest_feats:{nearest_feats.shape}")
+    # print(f"pred_fetats:{feats.shape}")
 
     feats_loss = mes_loss(pred_feats, nearest_feats)
     # print(feats_loss)

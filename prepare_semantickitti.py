@@ -25,6 +25,23 @@ def generate_path_list(ply_path, output_path, model_name):
         ) as f:
             f.writelines(eval(mode + "_path"))
 
+def extract_attributes(plydata, attr_prefix):
+
+    attr_names = [
+        p.name for p in plydata.elements[0].properties if p.name.startswith(attr_prefix)
+    ]
+    # Sort attributes by the numerical suffix
+    attr_names = sorted(attr_names, key=lambda x: int(x.split("_")[-1]))
+    
+    # Preallocate a numpy array for the attributes
+    num_points = plydata.elements[0].count
+    attrs = np.zeros((num_points, len(attr_names)))
+    
+    # Fill the array with the actual data from the PLY
+    for idx, attr_name in enumerate(attr_names):
+        attrs[:, idx] = np.asarray(plydata.elements[0][attr_name])
+    
+    return attrs
 
 def load_pcd(path, dataset_name="semantickitti"):
     assert dataset_name == "semantickitti"
@@ -49,27 +66,17 @@ def load_pcd(path, dataset_name="semantickitti"):
         axis=1,
     )
     opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
-    scale_names = [
-        p.name for p in plydata.elements[0].properties if p.name.startswith("scale_")
-    ]
-    scale_names = sorted(scale_names, key=lambda x: int(x.split("_")[-1]))
-    scales = np.zeros((xyz.shape[0], len(scale_names)))
-    for idx, attr_name in enumerate(scale_names):
-        scales[:, idx] = np.asarray(plydata.elements[0][attr_name])
 
-    rot_names = [
-        p.name for p in plydata.elements[0].properties if p.name.startswith("rot")
-    ]
-    rot_names = sorted(rot_names, key=lambda x: int(x.split("_")[-1]))
-    rots = np.zeros((xyz.shape[0], len(rot_names)))
-    for idx, attr_name in enumerate(rot_names):
-        rots[:, idx] = np.asarray(plydata.elements[0][attr_name])
-
+    scales = extract_attributes(plydata, 'scale_')
+    rots = extract_attributes(plydata, 'rot_')
+    f_rests = extract_attributes(plydata, 'f_rest_')
+    f_dcs = extract_attributes(plydata, 'f_dc_')
     print(f"rots_shape: {rots.shape}")
     print(f"scales_shape: {scales.shape}")
     print(f"xyz_shape: {xyz.shape}")
     print(f"op_shape: {opacities.shape}")
-    points = np.hstack((xyz, opacities, scales, rots))
+    points = np.hstack((xyz, nxyz, f_dcs, f_rests, opacities, scales, rots))
+    print(f"points shape: {points.shape}")
     return points
 
 
@@ -260,7 +267,7 @@ def parse_dataset_args():
 
 if __name__ == "__main__":
     dataset_args = parse_dataset_args()
-    train_path = "../DPCC_data/point_cloud.ply"
+    train_path = "/home/jovyan/urp-data/3dgs_output/bicycle/point_cloud/iteration_30000/point_cloud.ply"
 
     # 2. generate dataset
     generate_dataset(
