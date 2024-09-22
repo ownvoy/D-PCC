@@ -166,7 +166,7 @@ class DownsampleLayer(nn.Module):
         self.position_embedding_nn = PositionEmbeddingLayer(args)
         self.density_embedding_nn = DensityEmbeddingLayer(args)
 
-        self.post_conv = nn.Conv1d(args.dim * 3, args.in_fdim, 1)
+        self.post_conv = nn.Conv1d(args.dim * 2, args.in_fdim, 1)
 
 
     def get_density(self, sampled_xyzs, xyzs):
@@ -180,15 +180,18 @@ class DownsampleLayer(nn.Module):
         sampled_xyzs_trans = sampled_xyzs.permute(0, 2, 1).contiguous()
 
         # find the nearest neighbor in sampled_xyzs_trans: (b, n, 1)
+        # original 에서 제일 가까운 것의 sample idx를 뽑음
         ori2sample_idx = pointops.knnquery_heap(1, sampled_xyzs_trans, xyzs_trans)
 
         # (b, sample_num)
         downsample_num = torch.zeros((batch_size, sample_num)).cuda()
         for i in range(batch_size):
+            # 뽑힌 sample_idx 개수 기록
             uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
             downsample_num[i][uniques.long()] = counts.float()
 
-        # (b, m, k)
+        # find the nearest neighbor k in xyzs_trans (b, m, k)
+        # sample에서 제일 가까운 k개의 original idx 를 뽑음 
         knn_idx = pointops.knnquery_heap(self.k, xyzs_trans, sampled_xyzs_trans).long()
         torch.cuda.empty_cache()
 
@@ -196,7 +199,7 @@ class DownsampleLayer(nn.Module):
         expect_center = torch.arange(0, sample_num).cuda()
         # (b, m, k)
         expect_center = repeat(expect_center, 'm -> b m k', b=batch_size, k=self.k)
-        # (b, 1, m, k)
+        # (b, 1, m, k) 
         real_center = index_points(ori2sample_idx.permute(0, 2, 1).contiguous(), knn_idx)
         # (b, m, k)
         real_center = real_center.squeeze(1)
@@ -243,13 +246,9 @@ class DownsampleLayer(nn.Module):
         # embedding
         ancestor_embedding = self.feats_agg_nn(sampled_xyzs, xyzs, sampled_feats, feats, feats, knn_idx, mask)
         position_embedding = self.position_embedding_nn(sampled_xyzs, xyzs, knn_idx, mask)
-        density_embedding = self.density_embedding_nn(downsample_num.unsqueeze(1))
-        # print(ancestor_embedding.shape)
-        # print(position_embedding.shape)
-        # print(density_embedding.shape)
         
-        # (b, 3c, m)
-        agg_embedding = torch.cat((ancestor_embedding, position_embedding, density_embedding), dim=1)
+        # (b, 2c, m)
+        agg_embedding = torch.cat((ancestor_embedding, position_embedding), dim=1)
         # (b, c, m)
         agg_embedding = self.post_conv(agg_embedding)
 

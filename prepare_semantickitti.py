@@ -92,7 +92,7 @@ def normalize_pcd(xyzs):
 def divide_cube(
     xyzs,
     attribute,
-    map_size=100,
+    map_size=10000,
     cube_size=10,
     min_num=10,
     sample_num=None,
@@ -121,21 +121,6 @@ def divide_cube(
             cubes[tuple_cube_idx] = []
         cubes[tuple_cube_idx].append(idx)
 
-    # # remove those cubes whose points_num is small than min_num
-    del_k = -1
-    k_del = []
-    # patch_num = 0
-    # for k in cubes.keys():
-    #     patch_num += 1
-    #     print(len(cubes[k]))
-    #     if len(cubes[k]) < min_num:
-    #         label[cubes[k]] = del_k
-    #         del_k -= 1
-    #         k_del.append(k)
-    
-    # for k in k_del:
-    #     del cubes[k]
-    # print(f"patch_num{patch_num}")
     for tuple_cube_idx, point_idx in cubes.items():
         dim_cube_num = np.ceil(map_size / cube_size).astype(int)
         # indicate which cube a point belongs to
@@ -245,7 +230,7 @@ def parse_dataset_args():
         "--data_root", default="./", type=str, help="dir of semantickitti dataset"
     )
     # cube size
-    parser.add_argument("--cube_size", default=3, type=int, help="cube size")
+    parser.add_argument("--cube_size", default=50, type=int, help="cube size")
     # minimum points number in each cube when training
     parser.add_argument(
         "--train_min_num",
@@ -260,7 +245,7 @@ def parse_dataset_args():
 
 if __name__ == "__main__":
     dataset_args = parse_dataset_args()
-    train_path = "../DPCC_data/point_cloud.ply"
+    train_path = "/home/jovyan/wonjun/D-PCC/4eb87bfc-8/point_cloud/iteration_30000/point_cloud.ply"
 
     # 2. generate dataset
     generate_dataset(

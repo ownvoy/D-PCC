@@ -32,28 +32,28 @@ def parse_semantickitti_args():
     # dataset
     parser.add_argument(
         "--train_data_path",
-        default="../DPCC_data/data/no_delete_cubesize3.pkl",
+        default="/home/jovyan/wonjun/D-PCC/data/c3dgs_cube1.pkl",
         type=str,
         help="path to train dataset",
     )
     parser.add_argument(
-        "--train_cube_size", default=3, type=int, help="cube size of train dataset"
+        "--train_cube_size", default=1, type=int, help="cube size of train dataset"
     )
 
     parser.add_argument(
         "--test_data_path",
-        default="../DPCC_data/data/no_delete_cubesize3.pkl",
+        default="/home/jovyan/wonjun/D-PCC/data/c3dgs_cube1.pkl",
         type=str,
         help="path to test dataset",
     )
     parser.add_argument(
-        "--test_cube_size", default=3, type=int, help="cube size of test dataset"
+        "--test_cube_size", default=1, type=int, help="cube size of test dataset"
     )
     parser.add_argument(
         "--peak", default=None, type=float, help="peak value for PSNR calculation"
     )
     # train
-    parser.add_argument("--epochs", default=50, type=int, help="training epochs")
+    parser.add_argument("--epochs", default=350, type=int, help="training epochs")
     parser.add_argument("--batch_size", default=1, type=int, help="batch_size")
     parser.add_argument(
         "--print_freq", default=1000, type=int, help="loss print frequency"
@@ -110,7 +110,7 @@ def parse_semantickitti_args():
     parser.add_argument(
         "--layer_num", default=3, type=int, help="downsample/upsmaple stage"
     )
-    parser.add_argument("--dim", default=6, type=int, help="feature dimension, same with max upsample")
+    parser.add_argument("--dim", default=80, type=int, help="feature dimension, same with max upsample")
     parser.add_argument("--hidden_dim", default=64, type=int, help="hiddem dimension")
     parser.add_argument("--ngroups", default=1, type=int, help="groups for groupnorm")
     parser.add_argument(
@@ -134,7 +134,7 @@ def parse_semantickitti_args():
     # loss
     parser.add_argument(
         "--chamfer_coe",
-        default=0.5,
+        default=0.75,
         type=float,
         help="chamfer loss coefficient for intermediate point clouds",
     )
@@ -142,7 +142,7 @@ def parse_semantickitti_args():
         "--pts_num_coe", default=5e-7, type=float, help="pts num loss coefficient"
     )
     parser.add_argument(
-        "--feats_coe", default=1e-2, type=float, help="normal loss coefficient"
+        "--feats_coe", default=1e-3, type=float, help="normal loss coefficient"
     )
     parser.add_argument(
         "--bpp_lambda", default=1e-2, type=float, help="bpp loss coefficient"

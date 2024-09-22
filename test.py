@@ -360,14 +360,14 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="./model_checkpoints/cube3_epoch_28.pth", type=str, help="path to ckpt"
+        "--model_path", default="/home/jovyan/wonjun/D-PCC/model_checkpoints/cube1_epoch_39.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"
     )
     parser.add_argument(
         "--downsample_rate",
-        default=[1 / 6, 1 / 6, 1 / 6],
+        default=[1 / 2, 1 / 3, 1 / 3],
         nargs="+",
         type=float,
         help="downsample rate",
