@@ -2,17 +2,32 @@ import torch
 import numpy as np
 import os
 from torch.utils.data import Dataset
-import pickle as pkl
+import pickle
 import random
 
-
-
+def load_pickle(file_path):
+    with open(file_path, 'rb') as file:
+        data = pickle.load(file)
+    return data
 
 class CompressDataset(Dataset):
-    def __init__(self, data_path, map_size=100, cube_size=5, batch_size=1, points_num=1024):
-        self.data_path = data_path
-        with open(self.data_path, 'rb')as f:
-            self.data = pkl.load(f)
+    def __init__(self, file_names, map_size=100, cube_size=5, batch_size=1, points_num=1024):
+        merged_data = {}
+        last_index = -1
+        base_dir = '../../urp-data/semantickitti/data/semantickitti'
+
+        for idx, file_name in enumerate(file_names):
+            print(f"loading: {file_name}")
+            file_path = os.path.join(base_dir, file_name)
+            data = load_pickle(file_path)
+            print(f"load complete: {file_path}")
+            adjusted_data = {key + last_index + 1: value for key, value in data.items()}
+            merged_data.update(adjusted_data)
+            last_index = max(adjusted_data.keys())
+
+
+
+        self.data = merged_data
         self.init_data()
 
         self.map_size = map_size

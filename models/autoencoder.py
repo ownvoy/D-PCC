@@ -74,17 +74,25 @@ class AutoEncoder(nn.Module):
         # input: (b, c, n)
         points_num = input.shape[0] * input.shape[2]
         xyzs = input[:, :3, :].contiguous()
-        gt_feats = input[:, 3:, :].contiguous()
-        feats = input
+        
+        if self.args.compress_feats == True:
+            gt_feats = input[:, 3:, :].contiguous()
+        else:
+            gt_feats = None
 
+        # gt_feats = input[:, 3:, :].contiguous()
+        feats = input
+        original_shape = input.shape
+        print(f"original shape: {xyzs.shape}")
         # raise dimension
-        feats = self.pre_conv(feats)
+        if self.args.compress_feats == True:
+            feats = self.pre_conv(feats)
 
         # downsample
         gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt, remainders = self.encoder(
             xyzs, feats
         )
-        print(f"after downsampling feats: {latent_feats.shape}")
+        # print(f"after downsampling feats: {latent_feats.shape}")
 
         # entropy bottleneck: compress latent feats
         latent_feats_hat, latent_feats_likelihoods = self.feats_eblock(latent_feats)
@@ -121,9 +129,8 @@ class AutoEncoder(nn.Module):
         pred_xyzs, upsampled_feats = self.decoder(
             pred_latent_xyzs, latent_feats_hat, upsample_cnt, remainders, gt_dnums
         )
-        print("upsampled_feeats shape")
-        print(upsampled_feats.shape)
-
+        print(f"after shape: {pred_xyzs[-1].shape}")
+        
         # get loss
         loss, loss_items, all_pred2gt_idx = self.get_loss(
             gt_xyzs, gt_dnums, gt_mdis, pred_xyzs
@@ -140,10 +147,14 @@ class AutoEncoder(nn.Module):
             loss_items["latent_xyzs_loss"] = 0.0
 
         # feats_loss
-        pred_feats = torch.tanh(upsampled_feats)
-        feats_loss = get_feats_loss(
-            gt_feats, pred_feats, all_pred2gt_idx[-1], self.args
-        )
+        if self.args.compress_feats == True:
+            pred_feats = torch.tanh(upsampled_feats)
+            feats_loss = get_feats_loss(
+                gt_feats, pred_feats, all_pred2gt_idx[-1], self.args
+            )
+        else:
+            loss_items['normal_loss'] = 0.0
+
         loss = loss + feats_loss
         loss_items["feats_loss"] = feats_loss.item()
 

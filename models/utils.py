@@ -113,36 +113,61 @@ def save_pcd_pred(
         np.savetxt(f, output_data, fmt="%0.4f")
 
 
-def save_pcd(dir, name, xyzs, feats):
+# def save_pcd(dir, name, xyzs, feats):
+#     # input: (n, 3)
+#     path = os.path.join(dir, name)
+#     f = open(path, "w")
+#     f.write("ply\n")
+#     f.write("format ascii 1.0\n")
+#     f.write("element vertex " + str(xyzs.shape[0]) + "\n")
+#     f.write("property float x\n")
+#     f.write("property float y\n")
+#     f.write("property float z\n")
+#     # f.write("property float nx\n")
+#     # f.write("property float ny\n")
+#     # f.write("property float nz\n")
+#     f.write("property float opacity\n")
+#     f.write("property float scale_0\n")
+#     f.write("property float scale_1\n")
+#     f.write("property float scale_2\n")
+#     f.write("property float rot_0\n")
+#     f.write("property float rot_1\n")
+#     f.write("property float rot_2\n")
+#     f.write("property float rot_3\n")
+#     f.write("element face 0\n")
+#     f.write("property list uchar int vertex_indices\n")
+#     f.write("end_header\n")
+#     f.close()
+
+#     with open(path, "ab") as f:
+#         xyzs_and_feats = np.concatenate((xyzs, feats), axis=1)
+#         np.savetxt(f, xyzs_and_feats, fmt="%s")
+def save_pcd(dir, name, xyzs, normals=None):
     # input: (n, 3)
     path = os.path.join(dir, name)
-    f = open(path, "w")
+    f = open(path, 'w')
     f.write("ply\n")
     f.write("format ascii 1.0\n")
     f.write("element vertex " + str(xyzs.shape[0]) + "\n")
     f.write("property float x\n")
     f.write("property float y\n")
     f.write("property float z\n")
-    # f.write("property float nx\n")
-    # f.write("property float ny\n")
-    # f.write("property float nz\n")
-    f.write("property float opacity\n")
-    f.write("property float scale_0\n")
-    f.write("property float scale_1\n")
-    f.write("property float scale_2\n")
-    f.write("property float rot_0\n")
-    f.write("property float rot_1\n")
-    f.write("property float rot_2\n")
-    f.write("property float rot_3\n")
+    if isinstance(normals, np.ndarray):
+        f.write("property float nx\n")
+        f.write("property float ny\n")
+        f.write("property float nz\n")
     f.write("element face 0\n")
     f.write("property list uchar int vertex_indices\n")
     f.write("end_header\n")
     f.close()
 
-    with open(path, "ab") as f:
-        xyzs_and_feats = np.concatenate((xyzs, feats), axis=1)
-        np.savetxt(f, xyzs_and_feats, fmt="%s")
-
+    with open(path, 'ab') as f:
+        if isinstance(normals, np.ndarray):
+            # (n, 6)
+            xyzs_and_normals = np.concatenate((xyzs, normals), axis=1)
+            np.savetxt(f, xyzs_and_normals, fmt='%s')
+        else:
+            np.savetxt(f, xyzs, fmt='%s')
 
 def str2bool(val):
     if isinstance(val, bool):

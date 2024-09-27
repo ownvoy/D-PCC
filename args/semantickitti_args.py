@@ -37,7 +37,7 @@ def parse_semantickitti_args():
         help="path to train dataset",
     )
     parser.add_argument(
-        "--train_cube_size", default=1, type=int, help="cube size of train dataset"
+        "--train_cube_size", default=12, type=int, help="cube size of train dataset"
     )
 
     parser.add_argument(
@@ -87,7 +87,7 @@ def parse_semantickitti_args():
     )
     parser.add_argument(
         "--in_fdim",
-        default=8,
+        default=3,
         type=int,
         help="input dimension, may contain attributes",
     )
@@ -95,7 +95,7 @@ def parse_semantickitti_args():
     parser.add_argument("--k", default=16, type=int, help="knearest neighbor")
     parser.add_argument(
         "--downsample_rate",
-        default=[1 / 2, 1 / 2, 1 / 2],
+        default=[1 / 3, 1 / 3, 1 / 3],
         nargs="+",
         type=float,
         help="downsample rate",
@@ -110,7 +110,7 @@ def parse_semantickitti_args():
     parser.add_argument(
         "--layer_num", default=3, type=int, help="downsample/upsmaple stage"
     )
-    parser.add_argument("--dim", default=80, type=int, help="feature dimension, same with max upsample")
+    parser.add_argument("--dim", default=100, type=int, help="feature dimension, same with max upsample")
     parser.add_argument("--hidden_dim", default=64, type=int, help="hiddem dimension")
     parser.add_argument("--ngroups", default=1, type=int, help="groups for groupnorm")
     parser.add_argument(
@@ -132,64 +132,23 @@ def parse_semantickitti_args():
         help="sub-point conv mode, mlp or edge_conv",
     )
     # loss
-    parser.add_argument(
-        "--chamfer_coe",
-        default=0.75,
-        type=float,
-        help="chamfer loss coefficient for intermediate point clouds",
-    )
+    parser.add_argument('--chamfer_coe', default=0.1, type=float, help='chamfer loss coefficient for intermediate point clouds')
     parser.add_argument(
         "--pts_num_coe", default=5e-7, type=float, help="pts num loss coefficient"
     )
     parser.add_argument(
         "--feats_coe", default=1e-3, type=float, help="normal loss coefficient"
     )
-    parser.add_argument(
-        "--bpp_lambda", default=1e-2, type=float, help="bpp loss coefficient"
-    )
-    parser.add_argument(
-        "--mean_distance_coe",
-        default=5e1,
-        type=float,
-        help="mean distance loss coefficient",
-    )
-    parser.add_argument(
-        "--density_coe", default=1e-4, type=float, help="density loss coefficient"
-    )
-    parser.add_argument(
-        "--latent_xyzs_coe",
-        default=1e-2,
-        type=float,
-        help="latent xyzs loss coefficient",
-    )
+    parser.add_argument('--bpp_lambda', default=5e-4, type=float, help='bpp loss coefficient')
+    parser.add_argument('--mean_distance_coe', default=5e1, type=float, help='mean distance loss coefficient')
+    parser.add_argument('--density_coe', default=1e-4, type=float, help='density loss coefficient')
+    parser.add_argument('--latent_xyzs_coe', default=1e-2, type=float, help='latent xyzs loss coefficient')
     # test
-    parser.add_argument(
-        "--model_path", default="path to ckpt", type=str, help="path to ckpt"
-    )
-    parser.add_argument(
-        "--density_radius",
-        default=0.15,
-        type=float,
-        help="radius of query ball for density metric",
-    )
-    parser.add_argument(
-        "--dist_coe",
-        default=1e-5,
-        type=float,
-        help="distance coefficient for density metric",
-    )
-    parser.add_argument(
-        "--omega_xyzs",
-        default=0.5,
-        type=float,
-        help="xyzs threshold used for f1 score calculation",
-    )
-    parser.add_argument(
-        "--omega_normals",
-        default=0.5,
-        type=float,
-        help="normals threshold used for f1 score calculation",
-    )
+    parser.add_argument('--model_path', default='path to ckpt', type=str, help='path to ckpt')
+    parser.add_argument('--density_radius', default=0.15, type=float, help='radius of query ball for density metric')
+    parser.add_argument('--dist_coe', default=1e-5, type=float, help='distance coefficient for density metric')
+    parser.add_argument('--omega_xyzs', default=0.5, type=float, help='xyzs threshold used for f1 score calculation')
+    parser.add_argument('--omega_normals', default=0.5, type=float, help='normals threshold used')
 
     args = parser.parse_args()
 

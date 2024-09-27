@@ -30,15 +30,34 @@ def train(args):
 
     if args.batch_size > 1:
         print("The performance will degrade if batch_size is larger than 1!")
+    base_dir = '../../urp-data/semantickitti/data/semantickitti'
+    train_files = ["semantickitti['04']_train_cube_size_12.pkl"]
+    # train_files = [f for f in os.listdir(base_dir) if 'train' in f and f.endswith('.pkl')]
+    # val_files = [f for f in os.listdir(base_dir) if 'val' in f and f.endswith('.pkl')]
+    val_files =  ["semantickitti['04']_val_cube_size_12.pkl"]
+
 
     # load data
     train_dataset = CompressDataset(
-        data_path=args.train_data_path,
+        file_names=train_files,
         cube_size=args.train_cube_size,
         batch_size=args.batch_size,
     )
+    val_dataset = CompressDataset(
+        file_names=val_files,
+        cube_size=args.train_cube_size,
+        batch_size=args.batch_size,
+    )
+    #     train_dataset = CompressDataset(
+    #     data_path=args.train_data_path,
+    #     cube_size=args.train_cube_size,
+    #     batch_size=args.batch_size,
+    # )
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset, shuffle=True, batch_size=args.batch_size
+    )
+    val_loader = torch.utils.data.DataLoader(
+        dataset=val_dataset, shuffle=False, batch_size=args.batch_size
     )
 
     # set up folders for checkpoints
@@ -86,13 +105,15 @@ def train(args):
         train_loader_tqdm = tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.epochs}")
 
         for i, input_dict in enumerate(train_loader_tqdm):
+            if i == 100:
+                break
             # input: (b, n, c)
             input = input_dict["xyzs"].cuda()
             # input: (b, c, n)
             input = input.permute(0, 2, 1).contiguous()
-
-            feats = input_dict["feats"].cuda().permute(0, 2, 1).contiguous()
-            input = torch.cat((input, feats), dim=1)
+            if args.compress_feats == True:
+                feats = input_dict["feats"].cuda().permute(0, 2, 1).contiguous()
+                input = torch.cat((input, feats), dim=1)
             # print(input.shape)
 
             # model forward
@@ -169,12 +190,50 @@ def train(args):
                 epoch_aux_loss.get_avg(),
             )
         )
+        model.eval()
+        val_chamfer_loss = AverageMeter()
+        val_feats_loss = AverageMeter()
+        val_bpp = AverageMeter()
+        with torch.no_grad():
+            for input_dict in val_loader:
+                # xyzs: (b, n, c)
+                input = input_dict['xyzs'].cuda()
+                # (b, c, n)
+                input = input.permute(0, 2, 1).contiguous()
+
+                # compress feats
+                if args.compress_feats == True:
+                    feats = input_dict['feats'].cuda().permute(0, 2, 1).contiguous()
+                    input = torch.cat((input, feats), dim=1)
+                    args.in_fdim = 6
+
+                # gt_xyzs
+                gt_xyzs = input[:, :3, :].contiguous()
+
+                # model forward
+                decompressed_xyzs, loss, loss_items, bpp = model(input)
+
+                # calculate val loss and bpp
+                d1, d2, _, _ = chamfer_dist(gt_xyzs.permute(0, 2, 1).contiguous(),
+                                            decompressed_xyzs.permute(0, 2, 1).contiguous())
+                chamfer_loss = d1.mean() + d2.mean()
+
+                val_chamfer_loss.update(chamfer_loss.item())
+                val_feats_loss.update(loss_items['feats_loss'])
+                val_bpp.update(bpp.item())
+
+        # print loss
+        print("val epoch: %d/%d, val bpp: %f, val chamfer loss: %f, val feats loss: %f" %
+              (epoch+1, args.epochs, val_bpp.get_avg(), val_chamfer_loss.get_avg(), val_feats_loss.get_avg()))
+
         wandb.log(
             {
                 "epoch": epoch + 1,
                 "loss": epoch_loss.get_avg(),
                 "avg chamfer loss": epoch_chamfer_loss.get_avg(),
-                # "avg density loss": epoch_density_loss.get_avg(),
+                "val bpp": val_bpp.get_avg(),
+                "val chamfer loss": val_chamfer_loss.get_avg(),
+
                 # "avg pts num loss": epoch_pts_num_loss.get_avg(),
                 "avg latent xyzs loss": epoch_latent_xyzs_loss.get_avg(),
                 "avg feats loss": epoch_feats_loss.get_avg(),
@@ -183,6 +242,7 @@ def train(args):
                 "time per epoch": interval,
             }
         )
+
         if best_loss >= epoch_loss.get_avg():
             best_loss = epoch_loss.get_avg()
             model_save_path = os.path.join(
@@ -219,20 +279,20 @@ def parse_train_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[80,80,80],
+        default=[100,100,100],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",
     )
     parser.add_argument(
-        "--bpp_lambda", default=1e-2, type=float, help="bpp loss coefficient"
+        "--bpp_lambda", default=5e-4, type=float, help="bpp loss coefficient"
     )
     # feats compression
     parser.add_argument(
         "--compress_feats",
         default=True,
         type=str2bool,
-        help="whether compress featss",
+        help="whether compress feats",
     )
     # compress latent xyzs
     parser.add_argument(
