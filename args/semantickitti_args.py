@@ -65,7 +65,7 @@ def parse_semantickitti_args():
     # attribute compression
     parser.add_argument(
         "--compress_feats",
-        default=True,
+        default=False,
         type=str2bool,
         help="whether compress normals",
     )

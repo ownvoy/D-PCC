@@ -22,7 +22,7 @@ from models.Chamfer3D.dist_chamfer_3D import chamfer_3DDist
 chamfer_dist = chamfer_3DDist()
 
 
-wandb.init(project="dpcc2", entity="ownvoy")
+wandb.init(project="dpcc-kitti", entity="ownvoy")
 
 
 def train(args):
@@ -31,10 +31,23 @@ def train(args):
     if args.batch_size > 1:
         print("The performance will degrade if batch_size is larger than 1!")
     base_dir = '../../urp-data/semantickitti/data/semantickitti'
+    train_files = ["semantickitti['03']_train_cube_size_12.pkl",
+    "semantickitti['09']_train_cube_size_12.pkl",
+    "semantickitti['06']_train_cube_size_12.pkl",
+    "semantickitti['07']_train_cube_size_12.pkl",
+    "semantickitti['04']_train_cube_size_12.pkl",
+    "semantickitti['03']_train_cube_size_12.pkl"]
     train_files = ["semantickitti['04']_train_cube_size_12.pkl"]
+
     # train_files = [f for f in os.listdir(base_dir) if 'train' in f and f.endswith('.pkl')]
     # val_files = [f for f in os.listdir(base_dir) if 'val' in f and f.endswith('.pkl')]
-    val_files =  ["semantickitti['04']_val_cube_size_12.pkl"]
+    val_files = ["semantickitti['03']_val_cube_size_12.pkl",
+    "semantickitti['09']_val_cube_size_12.pkl",
+    "semantickitti['06']_val_cube_size_12.pkl",
+    "semantickitti['07']_val_cube_size_12.pkl",
+    "semantickitti['04']_val_cube_size_12.pkl",
+    "semantickitti['03']_val_cube_size_12.pkl"]
+    val_files = ["semantickitti['04']_val_cube_size_12.pkl"]
 
 
     # load data
@@ -105,8 +118,8 @@ def train(args):
         train_loader_tqdm = tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.epochs}")
 
         for i, input_dict in enumerate(train_loader_tqdm):
-            if i == 100:
-                break
+            # if i == 100:
+            #     break
             # input: (b, n, c)
             input = input_dict["xyzs"].cuda()
             # input: (b, c, n)
@@ -243,8 +256,8 @@ def train(args):
             }
         )
 
-        if best_loss >= epoch_loss.get_avg():
-            best_loss = epoch_loss.get_avg()
+        if best_val_chamfer_loss >= val_chamfer_loss.get_avg():
+            best_loss = val_chamfer_loss.get_avg()
             model_save_path = os.path.join(
                 "./model_checkpoints", f"cube{args.train_cube_size}_epoch_{epoch+1}.pth"
             )
@@ -290,7 +303,7 @@ def parse_train_args():
     # feats compression
     parser.add_argument(
         "--compress_feats",
-        default=True,
+        default=False,
         type=str2bool,
         help="whether compress feats",
     )

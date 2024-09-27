@@ -152,11 +152,13 @@ class AutoEncoder(nn.Module):
             feats_loss = get_feats_loss(
                 gt_feats, pred_feats, all_pred2gt_idx[-1], self.args
             )
-        else:
-            loss_items['normal_loss'] = 0.0
+            loss = loss + feats_loss
+            loss_items["feats_loss"] = feats_loss.item()
 
-        loss = loss + feats_loss
-        loss_items["feats_loss"] = feats_loss.item()
+        else:
+            loss_items['feats_loss'] = 0.0
+            
+        
 
         # bpp loss
         bpp = feats_bpp + xyzs_bpp
