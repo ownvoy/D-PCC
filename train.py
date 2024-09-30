@@ -31,23 +31,35 @@ def train(args):
     if args.batch_size > 1:
         print("The performance will degrade if batch_size is larger than 1!")
     base_dir = '../../urp-data/semantickitti/data/semantickitti'
-    train_files = ["semantickitti['03']_train_cube_size_12.pkl",
-    "semantickitti['09']_train_cube_size_12.pkl",
-    "semantickitti['06']_train_cube_size_12.pkl",
-    "semantickitti['07']_train_cube_size_12.pkl",
-    "semantickitti['04']_train_cube_size_12.pkl",
-    "semantickitti['03']_train_cube_size_12.pkl"]
-    train_files = ["semantickitti['04']_train_cube_size_12.pkl"]
+    train_files = [
+    "semantickitti01_sub_train_cube_size_12.pkl",
+    "semantickitti02_sub_train_cube_size_12.pkl",
+    "semantickitti03_sub_train_cube_size_12.pkl",
+    "semantickitti04_sub_train_cube_size_12.pkl",
+    "semantickitti05_sub_train_cube_size_12.pkl",
+    "semantickitti06_sub_train_cube_size_12.pkl",
+    "semantickitti07_sub_train_cube_size_12.pkl",
+    "semantickitti09_sub_train_cube_size_12.pkl",
+    "semantickitti00_sub_train_cube_size_12.pkl",
+    "semantickitti10_sub_train_cube_size_12.pkl",
+    ]
+    # train_files = ["semantickitti['04']_train_cube_size_12.pkl"]
 
     # train_files = [f for f in os.listdir(base_dir) if 'train' in f and f.endswith('.pkl')]
     # val_files = [f for f in os.listdir(base_dir) if 'val' in f and f.endswith('.pkl')]
-    val_files = ["semantickitti['03']_val_cube_size_12.pkl",
-    "semantickitti['09']_val_cube_size_12.pkl",
-    "semantickitti['06']_val_cube_size_12.pkl",
-    "semantickitti['07']_val_cube_size_12.pkl",
-    "semantickitti['04']_val_cube_size_12.pkl",
-    "semantickitti['03']_val_cube_size_12.pkl"]
-    val_files = ["semantickitti['04']_val_cube_size_12.pkl"]
+    val_files = [
+    "semantickitti01_sub_val_cube_size_12.pkl",
+    "semantickitti02_sub_val_cube_size_12.pkl",
+    "semantickitti03_sub_val_cube_size_12.pkl",
+    "semantickitti04_sub_val_cube_size_12.pkl",
+    "semantickitti05_sub_val_cube_size_12.pkl",
+    "semantickitti06_sub_val_cube_size_12.pkl",
+    "semantickitti07_sub_val_cube_size_12.pkl",
+    "semantickitti09_sub_val_cube_size_12.pkl",
+    "semantickitti00_sub_val_cube_size_12.pkl",
+    "semantickitti10_sub_val_cube_size_12.pkl",
+    ]
+    # val_files = ["semantickitti['04']_val_cube_size_12.pkl"]
 
 
     # load data
@@ -83,6 +95,7 @@ def train(args):
     # create the model
     model = AutoEncoder(args)
     model = model.cuda()
+    # model.load_state_dict(torch.load("/home/jovyan/wonjun/D-PCC/model_checkpoints/cube12_epoch_29.pth"))
     print("Training Arguments:", args)
     print("Model Architecture:", model)
 
@@ -298,7 +311,7 @@ def parse_train_args():
         help="max upsmaple number, reversely symmetric with downsample_rate",
     )
     parser.add_argument(
-        "--bpp_lambda", default=5e-4, type=float, help="bpp loss coefficient"
+        "--bpp_lambda", default=5e-6, type=float, help="bpp loss coefficient"
     )
     # feats compression
     parser.add_argument(

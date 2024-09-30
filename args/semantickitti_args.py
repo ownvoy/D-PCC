@@ -47,7 +47,7 @@ def parse_semantickitti_args():
         help="path to test dataset",
     )
     parser.add_argument(
-        "--test_cube_size", default=1, type=int, help="cube size of test dataset"
+        "--test_cube_size", default=12, type=int, help="cube size of test dataset"
     )
     parser.add_argument(
         "--peak", default=None, type=float, help="peak value for PSNR calculation"

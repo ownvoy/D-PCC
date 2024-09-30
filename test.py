@@ -12,7 +12,6 @@ from args.semantickitti_args import parse_semantickitti_args
 from models.utils import save_pcd, AverageMeter, str2bool, save_pcd_pred
 from dataset.dataset import CompressDataset
 from metrics.PSNR import get_psnr
-from metrics.density import get_density_metric
 from metrics.F1Score import get_f1_score
 from models.Chamfer3D.dist_chamfer_3D import chamfer_3DDist
 from models.loss import get_chamfer_loss
@@ -56,8 +55,6 @@ def compress(args, model, xyzs, feats):
     # input: (b, c, n)
 
     encode_start = time.time()
-    # raise dimension
-    feats = model.pre_conv(feats)
 
     # encoder forward
     gt_xyzs, gt_dnums, gt_mdis, latent_xyzs, latent_feats, downsample_cnt, remainders = model.encoder(xyzs, feats)
@@ -125,11 +122,135 @@ def decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_
 
     return pred_xyzs[-1], upsampled_feats, decode_time
 
+def test_xyzs(args):
+    # load data
+    tst_files = ["semantickitti08_sub_val_cube_size_12.pkl"]
+    test_dataset = CompressDataset(
+       file_names=tst_files, cube_size=args.test_cube_size
+    )
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=args.batch_size)
+    # indicate the last patch number of each full point cloud
+    pcd_last_patch_num = test_dataset.pcd_last_patch_num
+
+    # set up folders for saving point clouds
+    model_path = args.model_path
+    experiment_id = model_path.split('/')[-3]
+    save_dir = os.path.join(args.output_path, experiment_id, 'pcd')
+    gt_patch_dir, pred_patch_dir, gt_merge_dir, pred_merge_dir = make_dirs(save_dir)
+
+    # load model
+    model = load_model(args, model_path)
+
+    # metrics
+    patch_bpp = AverageMeter()
+    patch_chamfer_loss = AverageMeter()
+    patch_psnr = AverageMeter()
+    patch_encode_time = AverageMeter()
+    patch_decode_time = AverageMeter()
+    pcd_num = 0
+    pcd_bpp = AverageMeter()
+    pcd_chamfer_loss = AverageMeter()
+    pcd_psnr = AverageMeter()
+
+    # merge xyzs
+    pcd_gt_patches = []
+    pcd_pred_patches = []
+
+    # test
+    with torch.no_grad():
+        for i, input_dict in enumerate(test_loader):
+            # input: (b, n, c)
+            input = input_dict['xyzs'].cuda()
+            # normals : (b, n, c)
+            gt_normals = input_dict['feats'].cuda()
+            # (b, c, n)
+            input = input.permute(0, 2, 1).contiguous()
+            xyzs = input[:, :3, :].contiguous()
+            gt_patches = xyzs
+            feats = input
+
+            # compress
+            latent_xyzs_str,xyzs_size,latent_feats_str,feats_size,encode_time,actual_bpp, downsample_cnt,remainders,gt_dnums = compress(args, model, xyzs, feats)
+
+            # update metrics
+            patch_encode_time.update(encode_time)
+            patch_bpp.update(actual_bpp)
+            pcd_bpp.update(actual_bpp)
+            upsample_cnt = downsample_cnt
+
+            # decompress
+            pred_patches, upsampled_feats, decode_time \
+                = decompress(args, model, latent_xyzs_str, xyzs_size, latent_feats_str, feats_size, upsample_cnt, remainders, gt_dnums)
+            patch_decode_time.update(decode_time)
+
+            # calculate metrics
+            # (b, 3, n) -> (b, n, 3)
+            gt_patches = gt_patches.permute(0, 2, 1).contiguous()
+            pred_patches = pred_patches.permute(0, 2, 1).contiguous()
+            # chamfer distance
+            gt2pred_loss, pred2gt_loss, _, _ = chamfer_dist(gt_patches, pred_patches)
+            chamfer_loss = gt2pred_loss.mean() + pred2gt_loss.mean()
+            patch_chamfer_loss.update(chamfer_loss.item())
+            pcd_chamfer_loss.update(chamfer_loss.item())
+            # psnr
+            psnr = get_psnr(gt_patches, gt_normals, pred_patches, test_loader, args)
+            # the psnr may be inf when the normals are not accurate
+            if not torch.isinf(psnr):
+                patch_psnr.update(psnr.item())
+                pcd_psnr.update(psnr.item())
+
+
+            # scale patches to original size: (n, 3)
+            original_gt_patches = test_dataset.scale_to_origin(gt_patches.detach().cpu(), i).squeeze(0).numpy()
+            original_pred_patches = test_dataset.scale_to_origin(pred_patches.detach().cpu(), i).squeeze(0).numpy()
+            # save patches
+            save_pcd(gt_patch_dir, str(i) + '.ply', original_gt_patches)
+            save_pcd(pred_patch_dir, str(i) + '.ply', original_pred_patches)
+
+            # merge patches
+            pcd_gt_patches.append(original_gt_patches)
+            pcd_pred_patches.append(original_pred_patches)
+            # generate the full point cloud
+            if i == pcd_last_patch_num[pcd_num] - 1:
+                gt_pcd = np.concatenate((pcd_gt_patches), axis=0)
+                pred_pcd = np.concatenate((pcd_pred_patches), axis=0)
+
+                # averaged metrics of each full point cloud
+                print("pcd:", pcd_num, "pcd bpp:", pcd_bpp.get_avg(), "pcd chamfer loss:", pcd_chamfer_loss.get_avg(),
+                      "pcd psnr:", pcd_psnr.get_avg())
+
+                # save the full point cloud
+                save_pcd(gt_merge_dir, str(pcd_num) + '.ply', gt_pcd)
+                save_pcd(pred_merge_dir, str(pcd_num) + '.ply', pred_pcd)
+
+                # reset
+                pcd_num += 1
+                pcd_gt_patches.clear()
+                pcd_pred_patches.clear()
+                pcd_bpp.reset()
+                pcd_chamfer_loss.reset()
+                pcd_psnr.reset()
+
+            # current patch
+            print("patch:", i, "patch bpp:", actual_bpp, "chamfer loss:", chamfer_loss.item(),
+                  "psnr:", psnr.item(), 
+                  "encode time:", encode_time, "decode time:", decode_time)
+
+    # averaged metrics of the whole dataset
+    print("avg patch bpp:", patch_bpp.get_avg())
+    print("avg chamfer loss:", patch_chamfer_loss.get_avg())
+    print("avg psnr:", patch_psnr.get_avg())
+    print("avg encode time:", patch_encode_time.get_avg())
+    print("avg decode time:", patch_decode_time.get_avg())
+
+
+
 
 def test_xyzs_feats(args):
     # load data
+    tst_files = ["semantickitti08_sub_val_cube_size_12.pkl"]
     test_dataset = CompressDataset(
-        data_path=args.train_data_path, cube_size=args.test_cube_size
+       file_names=tst_files, cube_size=args.test_cube_size
     )
     test_loader = torch.utils.data.DataLoader(
         dataset=test_dataset, batch_size=args.batch_size
@@ -169,10 +290,10 @@ def test_xyzs_feats(args):
             
             # input: (b, c, n)
             input = input.permute(0, 2, 1).contiguous()
-
-            feats = input_dict["feats"].cuda().permute(0, 2, 1).contiguous()
-            input = torch.cat((input, feats), dim=1)
-            # print(input.shape)
+            if args.compress_feats == True:
+                feats = input_dict["feats"].cuda().permute(0, 2, 1).contiguous()
+                input = torch.cat((input, feats), dim=1)
+                # print(input.shape)
 
             # model forward
             decompressed_xyzs, loss, loss_items, bpp = model(input)
@@ -236,8 +357,6 @@ def test_xyzs_feats(args):
             
             print(f"pred_patches:{pred_patches.shape}")
             print(f"gt_patches:{gt_patches.shape}")
-            print(f"pred_feats:{pred_feats.shape}")
-            print(f"gt_feats:{gt_feats.shape}")
  
             # f1 score
             f1_score = get_f1_score(
@@ -360,7 +479,7 @@ def parse_test_args():
         "--dataset", default="semantickitti", type=str, help="shapenet or semantickitti"
     )
     parser.add_argument(
-        "--model_path", default="/home/jovyan/wonjun/D-PCC/model_checkpoints/cube1_epoch_39.pth", type=str, help="path to ckpt"
+        "--model_path", default="/home/jovyan/wonjun/D-PCC/model_checkpoints/smoot_mountain_besat.pth", type=str, help="path to ckpt"
     )
     parser.add_argument(
         "--batch_size", default=1, type=int, help="the test batch_size must be 1"
@@ -374,13 +493,13 @@ def parse_test_args():
     )
     parser.add_argument(
         "--max_upsample_num",
-        default=[80,80,80],
+        default=[100,100,100],
         nargs="+",
         type=int,
         help="max upsmaple number, reversely symmetric with downsample_rate",
     )
     parser.add_argument(
-        "--bpp_lambda", default=1e-3, type=float, help="bpp loss coefficient"
+        "--bpp_lambda", default=5e-6, type=float, help="bpp loss coefficient"
     )
     # compress latent xyzs
     parser.add_argument(
@@ -419,4 +538,4 @@ if __name__ == "__main__":
         model_args = parse_semantickitti_args()
 
     reset_model_args(test_args, model_args)
-    test_xyzs_feats(model_args)
+    test_xyzs(model_args)
